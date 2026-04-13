@@ -9,11 +9,14 @@ param(
 
 $ErrorActionPreference = "Stop"
 
-$GREEN = "`e[32m"
-$YELLOW = "`e[33m"
-$RED = "`e[31m"
-$CYAN = "`e[36m"
-$NC = "`e[0m"
+try {
+
+$ESC    = [char]27
+$GREEN  = "$ESC[32m"
+$YELLOW = "$ESC[33m"
+$RED    = "$ESC[31m"
+$CYAN   = "$ESC[36m"
+$NC     = "$ESC[0m"
 
 function Log-Info($msg)  { Write-Host "[i] $msg" }
 function Log-Ok($msg)    { Write-Host "${GREEN}[✓]${NC} $msg" }
@@ -65,8 +68,8 @@ Log-Ok "  $pluginsDir"
 # ── Step 4: Install plugin entry file ────────────────────────────
 Log-Step "Installing plugin entry file..."
 
-$repoRoot = Split-Path $PSScriptRoot -Parent
-$sourceFile = Join-Path $repoRoot "plugin\atlas.ts"
+$repoRoot   = if ($PSScriptRoot) { Split-Path $PSScriptRoot -Parent } else { "" }
+$sourceFile = if ($repoRoot) { Join-Path $repoRoot "plugin\atlas.ts" } else { "" }
 
 if (Test-Path $sourceFile) {
     Copy-Item -Path $sourceFile -Destination $entryPath -Force
@@ -338,3 +341,11 @@ Log-Info "  /atlas-echo full   — balanced (default)"
 Log-Info "  /atlas-echo ultra  — maximum compression"
 Log-Info "  /atlas-verbose     — disable all compression"
 Write-Host ""
+
+} catch {
+    Write-Host ""
+    Log-Err "Error inesperado: $_"
+    Write-Host ""
+}
+
+Read-Host "Presiona Enter para salir"
