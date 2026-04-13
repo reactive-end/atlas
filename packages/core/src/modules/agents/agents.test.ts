@@ -61,7 +61,7 @@ describe('Agent Definitions', () => {
 
       it('uses model from preset', () => {
         const agent = factory(TEST_PRESET, true)
-        expect(agent.model).toBe('openai/gpt-5.4')
+        expect(agent.model).toBe(TEST_PRESET.model)
       })
 
       it('uses skills from preset', () => {
@@ -94,6 +94,90 @@ describe('Agent Definitions', () => {
       })
     })
   }
+
+  describe('atlas specialization', () => {
+    it('echo prompt enforces mandatory delegation', () => {
+      const agent = createAtlasAgent(TEST_PRESET, true)
+      expect(agent.systemPrompt).toContain('MandatoryDelegation')
+    })
+
+    it('verbose prompt forbids native OpenCode agents', () => {
+      const agent = createAtlasAgent(TEST_PRESET, false)
+      expect(agent.systemPrompt).toContain('NEVER use native OpenCode agents')
+    })
+  })
+
+  describe('pathfinder specialization', () => {
+    it('echo prompt enforces read-only constraint', () => {
+      const agent = createPathfinderAgent(TEST_PRESET, true)
+      expect(agent.systemPrompt).toContain('READ-ONLY')
+    })
+
+    it('verbose prompt enforces never edit files', () => {
+      const agent = createPathfinderAgent(TEST_PRESET, false)
+      expect(agent.systemPrompt).toContain('never edit files')
+    })
+  })
+
+  describe('archivist specialization', () => {
+    it('echo prompt references grep_app MCP tool', () => {
+      const agent = createArchivistAgent(TEST_PRESET, true)
+      expect(agent.systemPrompt).toContain('grep_app')
+    })
+
+    it('verbose prompt covers version-specific behavior', () => {
+      const agent = createArchivistAgent(TEST_PRESET, false)
+      expect(agent.systemPrompt).toContain('version-specific')
+    })
+  })
+
+  describe('elder specialization', () => {
+    it('echo prompt covers architectural reasoning', () => {
+      const agent = createElderAgent(TEST_PRESET, true)
+      expect(agent.systemPrompt).toContain('architectural')
+    })
+
+    it('verbose prompt covers trade-offs analysis', () => {
+      const agent = createElderAgent(TEST_PRESET, false)
+      expect(agent.systemPrompt).toContain('trade-offs')
+    })
+  })
+
+  describe('artisan specialization', () => {
+    it('echo prompt covers micro-interactions', () => {
+      const agent = createArtisanAgent(TEST_PRESET, true)
+      expect(agent.systemPrompt).toContain('micro-interactions')
+    })
+
+    it('verbose prompt covers pixel-perfect implementations', () => {
+      const agent = createArtisanAgent(TEST_PRESET, false)
+      expect(agent.systemPrompt).toContain('pixel-perfect')
+    })
+  })
+
+  describe('mender specialization', () => {
+    it('echo prompt enforces bounded execution', () => {
+      const agent = createMenderAgent(TEST_PRESET, true)
+      expect(agent.systemPrompt).toContain('bounded')
+    })
+
+    it('verbose prompt separates execution from decisions', () => {
+      const agent = createMenderAgent(TEST_PRESET, false)
+      expect(agent.systemPrompt).toContain('Mender executes')
+    })
+  })
+
+  describe('tribunal specialization', () => {
+    it('echo prompt covers consensus synthesis', () => {
+      const agent = createTribunalAgent(TEST_PRESET, true)
+      expect(agent.systemPrompt).toContain('synthesize')
+    })
+
+    it('verbose prompt enforces verbatim result handling', () => {
+      const agent = createTribunalAgent(TEST_PRESET, false)
+      expect(agent.systemPrompt).toContain('verbatim')
+    })
+  })
 
   describe('inspector specialization', () => {
     it('echo prompt mentions ROOT CAUSE format', () => {

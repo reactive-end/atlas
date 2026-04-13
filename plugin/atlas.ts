@@ -1,5 +1,5 @@
 // Atlas Plugin for OpenCode
-// Registers Atlas orchestrator + 6 subagents in the UI via config hook
+// Registers 18 agents (Atlas orchestrator + 17 specialists) via config hook
 // Place in ~/.config/opencode/plugins/ or .opencode/plugins/
 
 import type { Plugin, PluginInput, PluginOptions } from '@opencode-ai/plugin'

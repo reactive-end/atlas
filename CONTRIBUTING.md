@@ -2,7 +2,7 @@
 
 So you want to help make Atlas even better? Welcome aboard! This guide will walk you through how to contribute without making the maintainers cry into their coffee. I'm the only maintainer, so I know what I'm talking about
 
-Before you start: Atlas is opinionated by design. Those 7 agents, 4 modules, and strict code rules? They are not suggestions. They are the foundation. If you are looking for a project where anything goes, this might not be it. But if you appreciate well-structured, laser-focused code, you are in the right place.
+Before you start: Atlas is opinionated by design. Those 18 agents, 4 modules, and strict code rules? They are not suggestions. They are the foundation. If you are looking for a project where anything goes, this might not be it. But if you appreciate well-structured, laser-focused code, you are in the right place.
 
 ## Contribution Process
 
@@ -92,9 +92,9 @@ Yes, you have to write tests. No, "it works on my machine" is not sufficient.
 
 Consider this the "do not feed the bears" section. These boundaries exist to keep Atlas focused and maintainable.
 
-- Do not add new agents. The system has exactly 7. Not 6, not 8. Seven. I have thought about this.
+- Do not add new agents. The system has exactly 18. I have thought about this extensively.
 - Do not add new modules. Echo, Agents, Forge, Vault. That is the complete set. No fifth module.
-- Do not add additional TUI commands. `/atlas-echo` and `/atlas-verbose` are sufficient.
+- Do not add additional TUI commands. `/atlas-echo`, `/atlas-verbose`, and `/atlas-status` are sufficient.
 - Do not add runtime dependencies without explicit approval. Dependency hell is real and I am actively avoiding it.
 
 ## Bug Reporting

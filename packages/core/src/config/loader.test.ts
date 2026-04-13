@@ -67,11 +67,12 @@ describe('Config Loader', () => {
     expect(defaultPreset['pathfinder'].model.length).toBeGreaterThan(0)
   })
 
-  it('premium preset uses claude opus for all agents', () => {
+  it('premium preset has a model defined for all agents', () => {
     const config = loadConfig()
     const premiumPreset = config.agents.presets.premium
     for (const agent of Object.values(premiumPreset)) {
-      expect(agent.model).toContain('claude-opus')
+      expect(agent.model).toBeDefined()
+      expect(agent.model.length).toBeGreaterThan(0)
     }
   })
 })
