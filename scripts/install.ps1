@@ -55,7 +55,8 @@ Log-Info "  Config dir: $opencodeDir"
 if ((Test-Path $entryPath) -and (-not $Force)) {
     Log-Warn "Atlas already installed at: $entryPath"
     Log-Info "Use -Force to reinstall"
-    exit 1
+    Read-Host "Presiona Enter para salir"
+    return
 }
 
 # ── Step 3: Create directories ───────────────────────────────────
@@ -67,22 +68,28 @@ Log-Ok "  $pluginsDir"
 
 # ── Step 4: Install plugin entry file ────────────────────────────
 Log-Step "Installing plugin entry file..."
-
-$repoRoot   = if ($PSScriptRoot) { Split-Path $PSScriptRoot -Parent } else { "" }
-$sourceFile = if ($repoRoot) { Join-Path $repoRoot "plugin\atlas.ts" } else { "" }
-
-if ($sourceFile -and (Test-Path $sourceFile)) {
-    Copy-Item -Path $sourceFile -Destination $entryPath -Force
-    Log-Ok "  Copied from repo: $entryPath"
-} else {
-    Log-Info "  Downloading from GitHub..."
-    try {
-        Invoke-WebRequest -Uri "$GITHUB_RAW/plugin/atlas.ts" -OutFile $entryPath -UseBasicParsing
-        Log-Ok "  Downloaded: $entryPath"
-    } catch {
-        Log-Err "  Download failed: $_"
-        Log-Err "  Check your internet connection and try again."
-        exit 1
+Log-Info "  Downloading plugin file..."
+try {
+    Invoke-WebRequest -Uri "$GITHUB_RAW/plugin/atlas.ts" -OutFile $entryPath -UseBasicParsing
+    Log-Ok "  Downloaded: $entryPath"
+} catch {
+    $downloadErr = $_
+    Log-Warn "  Download failed: $downloadErr"
+    Log-Info "  Trying local copy..."
+    $localFound = $false
+    if ($null -ne $PSScriptRoot -and "$PSScriptRoot".Trim() -ne "") {
+        $localParent = Split-Path $PSScriptRoot -Parent
+        if ($null -ne $localParent -and "$localParent".Trim() -ne "") {
+            $localSource = Join-Path $localParent "plugin\atlas.ts"
+            if (Test-Path $localSource) {
+                Copy-Item -Path $localSource -Destination $entryPath -Force
+                Log-Ok "  Copied from repo: $entryPath"
+                $localFound = $true
+            }
+        }
+    }
+    if (-not $localFound) {
+        throw "Could not install plugin file. Check your internet connection."
     }
 }
 
@@ -324,7 +331,7 @@ if (Test-Path $coreModule) {
 if ($errors -gt 0) {
     Write-Host ""
     Log-Err "Installation had $errors error(s). Check output above."
-    exit 1
+    throw "Installation completed with $errors error(s)."
 }
 
 # ── Done ─────────────────────────────────────────────────────────
