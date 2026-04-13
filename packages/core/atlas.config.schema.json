@@ -1,0 +1,186 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Atlas Configuration Schema",
+  "description": "Configuration for Atlas OpenCode Plugin - Token optimization system",
+  "type": "object",
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "description": "Schema reference URL"
+    },
+    "echo": {
+      "type": "object",
+      "description": "Output compression settings",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable Echo mode for terse responses"
+        },
+        "defaultLevel": {
+          "type": "string",
+          "enum": ["lite", "full", "ultra"],
+          "default": "full",
+          "description": "Default compression level: lite (light), full (standard), ultra (maximum)"
+        },
+        "autoClarityEnabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically disable terse mode for critical contexts (security, irreversible ops)"
+        }
+      },
+      "additionalProperties": false
+    },
+    "agents": {
+      "type": "object",
+      "description": "Multi-agent system configuration",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable specialized agents for task delegation"
+        },
+        "preset": {
+          "type": "string",
+          "enum": ["default", "performance", "economy", "premium"],
+          "default": "default",
+          "description": "Agent preset determining model selection strategy"
+        },
+        "defaultMode": {
+          "type": "string",
+          "enum": ["echo", "verbose"],
+          "default": "echo",
+          "description": "Default mode for agent communication"
+        },
+        "forceEchoOnAll": {
+          "type": "boolean",
+          "default": true,
+          "description": "Apply Echo compression to all agent outputs"
+        },
+        "presets": {
+          "type": "object",
+          "description": "Custom agent configurations per preset",
+          "additionalProperties": {
+            "type": "object",
+            "patternProperties": {
+              "^(atlas|pathfinder|archivist|elder|artisan|mender|tribunal)$": {
+                "type": "object",
+                "properties": {
+                  "model": {
+                    "type": "string",
+                    "description": "Model identifier (e.g., openai/gpt-5.4)"
+                  },
+                  "skills": {
+                    "type": "array",
+                    "items": { "type": "string" },
+                    "description": "Agent capabilities"
+                  },
+                  "mcps": {
+                    "type": "array",
+                    "items": { "type": "string" },
+                    "description": "MCP servers available to agent"
+                  }
+                },
+                "required": ["model", "skills", "mcps"],
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "forge": {
+      "type": "object",
+      "description": "Bash output compression settings",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable Forge compression for tool outputs"
+        },
+        "adaptiveIntensity": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically adjust compression based on output size"
+        },
+        "maxLines": {
+          "type": "number",
+          "minimum": 10,
+          "maximum": 1000,
+          "default": 200,
+          "description": "Maximum lines to keep after truncation"
+        },
+        "dedupMin": {
+          "type": "number",
+          "minimum": 2,
+          "maximum": 10,
+          "default": 3,
+          "description": "Minimum consecutive duplicate lines to trigger deduplication"
+        },
+        "summarizeThresholdLines": {
+          "type": "number",
+          "minimum": 100,
+          "maximum": 5000,
+          "default": 500,
+          "description": "Line count threshold for switching to summary mode"
+        },
+        "compactThresholdTokens": {
+          "type": "number",
+          "minimum": 10000,
+          "maximum": 500000,
+          "default": 120000,
+          "description": "Token threshold for aggressive compaction"
+        },
+        "bypass": {
+          "type": "array",
+          "items": { "type": "string" },
+          "default": ["docker exec", "psql", "mysql", "ssh"],
+          "description": "Commands to skip compression for"
+        },
+        "compressMarkdown": {
+          "type": "boolean",
+          "default": false,
+          "description": "Apply prose compression to markdown output"
+        },
+        "redundancyCacheEnabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Cache similar outputs to avoid repetition"
+        },
+        "redundancyCacheSize": {
+          "type": "number",
+          "minimum": 4,
+          "maximum": 64,
+          "default": 16,
+          "description": "Size of redundancy cache (number of entries)"
+        }
+      },
+      "additionalProperties": false
+    },
+    "vault": {
+      "type": "object",
+      "description": "Persistent memory settings (embedded SQLite)",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable Vault for persistent memory between sessions"
+        },
+        "injectMemoryProtocol": {
+          "type": "boolean",
+          "default": true,
+          "description": "Inject memory protocol into system prompts"
+        },
+        "stripPrivateTags": {
+          "type": "boolean",
+          "default": true,
+          "description": "Strip @private tagged observations from memory recall"
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

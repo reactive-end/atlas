@@ -1,0 +1,9 @@
+node_modules/
+dist/
+*.tsbuildinfo
+.DS_Store
+.vault/
+coverage/
+*.log
+.env
+.env.local

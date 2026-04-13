@@ -1,0 +1,51 @@
+{
+  "name": "@atlas-opencode/core",
+  "version": "1.0.6",
+  "description": "Token optimization plugin for OpenCode CLI",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc && tsc-alias",
+    "lint": "eslint src/",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "typecheck": "tsc --noEmit",
+    "check": "npm run typecheck && npm run test",
+    "prepublishOnly": "npm run check && npm run build"
+  },
+  "files": [
+    "dist/",
+    "atlas.config.schema.json"
+  ],
+  "keywords": [
+    "opencode",
+    "plugin",
+    "token-optimization",
+    "ai",
+    "cli"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/reactive-end/atlas"
+  },
+  "dependencies": {},
+  "peerDependencies": {},
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.8.0",
+    "eslint": "^9.0.0",
+    "@eslint/js": "^9.0.0",
+    "typescript-eslint": "^8.0.0",
+    "vitest": "^3.0.0",
+    "tsc-alias": "^1.8.16"
+  }
+}
