@@ -71,7 +71,7 @@ Log-Step "Installing plugin entry file..."
 $repoRoot   = if ($PSScriptRoot) { Split-Path $PSScriptRoot -Parent } else { "" }
 $sourceFile = if ($repoRoot) { Join-Path $repoRoot "plugin\atlas.ts" } else { "" }
 
-if (Test-Path $sourceFile) {
+if ($sourceFile -and (Test-Path $sourceFile)) {
     Copy-Item -Path $sourceFile -Destination $entryPath -Force
     Log-Ok "  Copied from repo: $entryPath"
 } else {
