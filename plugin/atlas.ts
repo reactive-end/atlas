@@ -2,7 +2,7 @@
 // Registers Atlas orchestrator + 6 subagents in the UI via config hook
 // Place in ~/.config/opencode/plugins/ or .opencode/plugins/
 
-import { type Plugin, type PluginInput, type PluginOptions, tool } from '@opencode-ai/plugin'
+import type { Plugin, PluginInput, PluginOptions } from '@opencode-ai/plugin'
 import type { AgentSdkConfig } from '@atlas-opencode/core'
 
 import {
@@ -21,11 +21,6 @@ import {
   buildEchoPrompt,
   buildDisabledPrompt,
   shouldDisableEcho,
-  handleMemSearch,
-  handleMemTimeline,
-  handleMemGetObservation,
-  handleMemSave,
-  initializeVault,
 } from '@atlas-opencode/core'
 
 type AtlasPluginState = {
@@ -103,12 +98,7 @@ const atlasPlugin: Plugin = async (input: PluginInput, _options?: PluginOptions)
   const config = loadConfig()
 
   const presets = config.agents.presets[config.agents.preset]
-  const agentConfigs: Record<string, AgentSdkConfig> = getAgentConfigs(presets, false)
-
-  let vaultReady = false
-  if (config.vault.enabled) {
-    vaultReady = initializeVault()
-  }
+  const agentConfigs: Record<string, AgentSdkConfig> = getAgentConfigs(presets, true)
 
   return {
     'experimental.chat.system.transform': async (input, output) => {
@@ -327,63 +317,6 @@ const atlasPlugin: Plugin = async (input: PluginInput, _options?: PluginOptions)
       }
     },
 
-    ...(vaultReady ? {
-      tool: {
-        mem_search: tool({
-          description: 'Search persistent memories by semantic query. Returns compact results.',
-          args: {
-            query: tool.schema.string('Search query for memories'),
-            limit: tool.schema.optional(tool.schema.number('Max results (default 10)')),
-          },
-          async execute(args) {
-            const result = handleMemSearch(
-              args.query,
-              args.limit ?? 10,
-              config.vault.stripPrivateTags,
-            )
-            return result.content
-          },
-        }),
-        mem_timeline: tool({
-          description: 'Get chronological memory entries for the current session.',
-          args: {
-            session_id: tool.schema.string('Session ID'),
-            limit: tool.schema.optional(tool.schema.number('Max entries (default 20)')),
-          },
-          async execute(args) {
-            const result = handleMemTimeline(args.session_id, args.limit ?? 20)
-            return result.content
-          },
-        }),
-        mem_get_observation: tool({
-          description: 'Retrieve full content of a specific memory entry by ID.',
-          args: {
-            id: tool.schema.string('Observation ID'),
-          },
-          async execute(args) {
-            const result = handleMemGetObservation(args.id)
-            return result.content
-          },
-        }),
-        mem_save: tool({
-          description: 'Save an observation to persistent memory.',
-          args: {
-            session_id: tool.schema.string('Session ID'),
-            content: tool.schema.string('Content to save'),
-            category: tool.schema.optional(tool.schema.string('Category (default: manual)')),
-          },
-          async execute(args) {
-            const result = handleMemSave(
-              args.session_id,
-              args.content,
-              args.category ?? 'manual',
-              config.vault.stripPrivateTags,
-            )
-            return result.content
-          },
-        }),
-      },
-    } : {}),
   }
 }
 
