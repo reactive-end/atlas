@@ -2,7 +2,7 @@
 // Registers 18 agents (Atlas orchestrator + 17 specialists) via config hook
 // Place in ~/.config/opencode/plugins/ or .opencode/plugins/
 
-import type { Plugin, PluginInput, PluginOptions } from '@opencode-ai/plugin'
+import { type Plugin, type PluginInput, type PluginOptions, tool } from '@opencode-ai/plugin'
 import type { AgentSdkConfig } from '@atlas-opencode/core'
 
 import {
@@ -21,6 +21,11 @@ import {
   buildEchoPrompt,
   buildDisabledPrompt,
   shouldDisableEcho,
+  handleMemSearch,
+  handleMemTimeline,
+  handleMemGetObservation,
+  handleMemSave,
+  initializeVault,
 } from '@atlas-opencode/core'
 
 type AtlasPluginState = {
@@ -99,6 +104,13 @@ const atlasPlugin: Plugin = async (input: PluginInput, _options?: PluginOptions)
 
   const presets = config.agents.presets[config.agents.preset]
   const agentConfigs: Record<string, AgentSdkConfig> = getAgentConfigs(presets, true)
+
+  const client = input.client
+
+  let vaultReady = false
+  if (config.vault.enabled) {
+    vaultReady = initializeVault()
+  }
 
   return {
     'experimental.chat.system.transform': async (input, output) => {
@@ -203,7 +215,7 @@ const atlasPlugin: Plugin = async (input: PluginInput, _options?: PluginOptions)
       if (text.startsWith('/atlas-status')) {
         // Send status as a system/assistant message
         try {
-          await input.client.sendMessage({
+          await client.sendMessage({
             role: 'assistant',
             parts: [{ type: 'text', text: generateStatusMessage(sessionState) }],
           })
@@ -221,7 +233,7 @@ const atlasPlugin: Plugin = async (input: PluginInput, _options?: PluginOptions)
         )
         sessionStates.set(sessionID, newState)
         try {
-          await input.client.sendMessage({
+          await client.sendMessage({
             role: 'assistant',
             parts: [{ type: 'text', text: `Atlas Echo mode set to: ${newState.echoLevel}` }],
           })
@@ -238,7 +250,7 @@ const atlasPlugin: Plugin = async (input: PluginInput, _options?: PluginOptions)
         )
         sessionStates.set(sessionID, newState)
         try {
-          await input.client.sendMessage({
+          await client.sendMessage({
             role: 'assistant',
             parts: [{ type: 'text', text: 'Atlas Echo mode disabled (verbose mode)' }],
           })
@@ -259,7 +271,7 @@ const atlasPlugin: Plugin = async (input: PluginInput, _options?: PluginOptions)
           
           // Send fun feedback message occasionally (every 5 messages)
           if (sessionState.stats.vaultSaved % 5 === 0 && sessionState.stats.vaultSaved > 0) {
-            await input.client.sendMessage({
+            await client.sendMessage({
               role: 'assistant',
               parts: [{ type: 'text', text: funMessages.vault.save }],
             })
@@ -271,7 +283,8 @@ const atlasPlugin: Plugin = async (input: PluginInput, _options?: PluginOptions)
     },
 
     config: async (opencodeConfig) => {
-      opencodeConfig.default_agent = 'atlas'
+      // Note: default_agent is not a Config field in OpenCode 1.4.x
+      // Users should set their default agent in opencode.json manually
 
       // Register agents
       if (!opencodeConfig.agent) {
@@ -317,6 +330,63 @@ const atlasPlugin: Plugin = async (input: PluginInput, _options?: PluginOptions)
       }
     },
 
+    ...(vaultReady ? {
+      tool: {
+        mem_search: tool({
+          description: 'Search persistent memories by semantic query. Returns compact results.',
+          args: {
+            query: tool.schema.string().describe('Search query for memories'),
+            limit: tool.schema.number().describe('Max results (default 10)').optional(),
+          },
+          async execute(args) {
+            const result = handleMemSearch(
+              args.query,
+              args.limit ?? 10,
+              config.vault.stripPrivateTags,
+            )
+            return result.content
+          },
+        }),
+        mem_timeline: tool({
+          description: 'Get chronological memory entries for the current session.',
+          args: {
+            session_id: tool.schema.string().describe('Session ID'),
+            limit: tool.schema.number().describe('Max entries (default 20)').optional(),
+          },
+          async execute(args) {
+            const result = handleMemTimeline(args.session_id, args.limit ?? 20)
+            return result.content
+          },
+        }),
+        mem_get_observation: tool({
+          description: 'Retrieve full content of a specific memory entry by ID.',
+          args: {
+            id: tool.schema.string().describe('Observation ID'),
+          },
+          async execute(args) {
+            const result = handleMemGetObservation(args.id)
+            return result.content
+          },
+        }),
+        mem_save: tool({
+          description: 'Save an observation to persistent memory.',
+          args: {
+            session_id: tool.schema.string().describe('Session ID'),
+            content: tool.schema.string().describe('Content to save'),
+            category: tool.schema.string().describe('Category (default: manual)').optional(),
+          },
+          async execute(args) {
+            const result = handleMemSave(
+              args.session_id,
+              args.content,
+              args.category ?? 'manual',
+              config.vault.stripPrivateTags,
+            )
+            return result.content
+          },
+        }),
+      },
+    } : {}),
   }
 }
 
