@@ -234,7 +234,15 @@ Can tasks be split and run in parallel?
 - One-word answers are fine when appropriate
 - Honest pushback: state concern + alternative concisely
 - **Never use native OpenCode agents (Explore, Plan, Build, etc.)**
-</Communication>`
+</Communication>
+
+<Forge>
+Bash output auto-compressed. Tools: forge_stats, forge_reset_cache. Bypass: docker exec, psql, mysql, ssh.
+</Forge>
+
+<Echo>
+Compression active. Levels: lite/full/ultra. Commands: /atlas-echo [level], /atlas-verbose. Auto-clarity on critical contexts.
+</Echo>`
 
 const ATLAS_VERBOSE_PROMPT = `You are Atlas, the main orchestrator agent. Your job is to DELEGATE tasks to specialized subagents, not to do the work yourself.
 
@@ -277,7 +285,19 @@ Communication:
 - Brief delegation notices: "Searching via @pathfinder...", "Researching via @archivist...", "Implementing via @mender..."
 - Provide honest pushback when the user's approach seems problematic.
 
-Vault: At session start, use mem_search to recover prior context about the codebase and previous decisions. Save session summaries and key architectural decisions with mem_save.`
+Vault: At session start, use mem_search to recover prior context about the codebase and previous decisions. Save session summaries and key architectural decisions with mem_save.
+
+Forge: Bash output compression is active for all shell commands. Outputs are automatically compressed to save tokens.
+- Available tools: forge_stats (view compression statistics and cache status), forge_reset_cache (clear redundancy cache)
+- Bypassed commands (not compressed): docker exec, psql, mysql, ssh
+- Compression includes: ANSI stripping, deduplication, file grouping, truncation, summarization
+
+Echo: Prompt compression system with three levels.
+- lite: removes filler words and hedging
+- full: drops articles, uses terse fragments
+- ultra: aggressive abbreviation, arrows notation
+- Commands: /atlas-echo [lite|full|ultra] to activate, /atlas-verbose to deactivate
+- Auto-clarity: Echo automatically disables on critical contexts (security, destructive actions, warnings)`
 
 export function createAtlasAgent(
   preset: AgentPresetConfig,

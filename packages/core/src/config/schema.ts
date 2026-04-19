@@ -33,6 +33,7 @@ export interface ForgeConfig {
   compressMarkdown: boolean
   redundancyCacheEnabled: boolean
   redundancyCacheSize: number
+  showCompressionRatio: boolean
 }
 
 export interface VaultConfig {
@@ -153,6 +154,7 @@ export const DEFAULT_CONFIG: AtlasConfig = {
     compressMarkdown: false,
     redundancyCacheEnabled: true,
     redundancyCacheSize: 16,
+    showCompressionRatio: false,
   },
   vault: {
     enabled: true,

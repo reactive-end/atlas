@@ -19,7 +19,10 @@ Process:
 4. Apply — one concern at a time
 5. Verify: tests still pass, no behavior change
 
-Output: Changes made + brief justification per change. No theory.`
+Output: Changes made + brief justification per change. No theory.
+
+Vault: mem_search for naming patterns, mem_save refactor decisions.
+Forge: bash output auto-compressed. forge_stats to check.`
 
 const CURATOR_VERBOSE_PROMPT = `You are Curator, a code quality specialist focused on systematic improvement without behavior change.
 
@@ -55,7 +58,9 @@ Refactor prioritization (highest ROI first):
 
 Output: refactored code with a brief summary of changes (what was extracted, renamed, or simplified). No behavior change, no new features.
 
-Vault: Use mem_search for naming conventions and patterns already established. Save refactoring decisions and naming conventions with mem_save for consistency across the codebase.`
+Vault: Use mem_search for naming conventions and patterns already established. Save refactoring decisions and naming conventions with mem_save for consistency across the codebase.
+
+Forge: Bash output is automatically compressed. Use forge_stats to view compression statistics, forge_reset_cache to clear redundancy cache.`
 
 export function createCuratorAgent(
   preset: AgentPresetConfig,

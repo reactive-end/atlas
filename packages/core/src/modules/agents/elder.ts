@@ -19,7 +19,9 @@ When NOT delegate:
 - Tactical "how" vs strategic "should"
 - Quick research can answer
 
-Rule: Need senior review? → Elder. Code need simplification? → Elder. Just PR? → yourself.`
+Rule: Need senior review? → Elder. Code need simplification? → Elder. Just PR? → yourself.
+
+Vault: mem_search for prior decisions, mem_save architectural rationale.`
 
 const ELDER_VERBOSE_PROMPT = `You are Elder, a strategic advisor and code reviewer. You specialize in deep architectural reasoning, system trade-offs, complex debugging, and code simplification.
 
@@ -37,7 +39,9 @@ When NOT to use Elder:
 - Tactical "how to implement" vs strategic "should we implement"
 - Questions that quick research can answer
 
-Approach: Analyze trade-offs, consider long-term implications, and provide clear recommendations with reasoning.`
+Approach: Analyze trade-offs, consider long-term implications, and provide clear recommendations with reasoning.
+
+Vault: Use mem_search to review prior architectural decisions and trade-offs. Save architectural decisions and rationale with mem_save — these are costly to rediscover.`
 
 export function createElderAgent(
   preset: AgentPresetConfig,

@@ -1,4 +1,4 @@
-import type { PluginState, AgentName } from '@/types'
+import type { PluginState } from '@/types'
 import type { AtlasConfig } from '@/config/schema'
 
 // Re-exports for the plugin entry point
@@ -25,6 +25,7 @@ export { handleToolAfter, handleRealToolAfter, compressToolResult } from '@/hook
 
 // Forge compression
 export { shouldCompressResult, compressBashResult } from '@/modules/forge/bash-wrapper'
+export { getForgeStats, resetRedundancyCache } from '@/modules/forge/compressor'
 
 // Compacting hooks (vault)
 export { handleCompacting, buildCompactionContext } from '@/hooks/compacting'
@@ -78,16 +79,6 @@ export { createTacticianAgent } from '@/modules/agents/tactician'
 // Agent registry (for OpenCode UI registration)
 export { buildAgentRegistry, getAgentConfigs, AGENT_ALIASES } from '@/modules/agents/registry'
 export type { AgentSdkConfig } from '@/modules/agents/registry'
-
-export const AGENT_NAMES: AgentName[] = [
-  'atlas',
-  'pathfinder',
-  'archivist',
-  'elder',
-  'artisan',
-  'mender',
-  'tribunal',
-]
 
 export function createInitialState(config: AtlasConfig): PluginState {
   return {

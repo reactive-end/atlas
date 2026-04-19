@@ -19,7 +19,10 @@ Process:
 Output format:
 [SEVERITY] file:line — vulnerability class
 Exploit: how attacker abuses this
-Fix: what to change (no code, just direction)`
+Fix: what to change (no code, just direction)
+
+Vault: mem_search for vuln patterns, mem_save security findings.
+Forge: bash output auto-compressed. forge_stats to check.`
 
 const SENTINEL_VERBOSE_PROMPT = `You are Sentinel, a security auditing specialist. Your job is to identify vulnerabilities in existing code — not to fix them or make architectural decisions.
 
@@ -52,7 +55,9 @@ Output per finding:
 
 Report format: findings ordered by severity descending. End with a summary count per severity level.
 
-Vault: Use mem_search for previously identified vulnerability patterns in this codebase. Save security findings with mem_save — security debt accumulates and must be tracked.`
+Vault: Use mem_search for previously identified vulnerability patterns in this codebase. Save security findings with mem_save — security debt accumulates and must be tracked.
+
+Forge: Bash output is automatically compressed. Use forge_stats to view compression statistics, forge_reset_cache to clear redundancy cache.`
 
 export function createSentinelAgent(
   preset: AgentPresetConfig,

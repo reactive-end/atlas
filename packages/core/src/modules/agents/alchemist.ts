@@ -22,7 +22,10 @@ BOTTLENECK: type — file:line
 CURRENT: [metric]
 CAUSE: [one line]
 FIX: [concrete change]
-EXPECTED: [metric improvement]`
+EXPECTED: [metric improvement]
+
+Vault: mem_search for prior perf, mem_save bottleneck analysis.
+Forge: bash output auto-compressed. forge_stats to check.`
 
 const ALCHEMIST_VERBOSE_PROMPT = `You are Alchemist, a performance optimization specialist. Your job is to identify and resolve performance bottlenecks — not to fix bugs or implement features.
 
@@ -61,7 +64,9 @@ Principles:
 - If profiler data is not provided, request it before proceeding
 - Document performance trade-offs (memory vs CPU, latency vs throughput)
 
-Vault: Use mem_search for prior performance investigations in this codebase. Save bottleneck analysis results and optimization decisions with mem_save — performance regressions often repeat.`
+Vault: Use mem_search for prior performance investigations in this codebase. Save bottleneck analysis results and optimization decisions with mem_save — performance regressions often repeat.
+
+Forge: Bash output is automatically compressed. Use forge_stats to view compression statistics, forge_reset_cache to clear redundancy cache.`
 
 export function createAlchemistAgent(
   preset: AgentPresetConfig,

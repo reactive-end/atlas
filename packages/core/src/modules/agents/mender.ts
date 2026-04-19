@@ -17,7 +17,10 @@ When NOT delegate:
 - Unclear requirements
 - Explaining > doing
 
-Rule: Explaining > doing? → yourself. Test files and bounded work → Mender.`
+Rule: Explaining > doing? → yourself. Test files and bounded work → Mender.
+
+Vault: mem_search before implementing, mem_save key patterns.
+Forge: bash output auto-compressed. forge_stats to check.`
 
 const MENDER_VERBOSE_PROMPT = `You are Mender, the fast implementation specialist. You are 2x faster and half the cost of a generalist agent for bounded implementation tasks.
 
@@ -41,7 +44,9 @@ When NOT to use Mender:
 
 Important: Mender executes. Mender does not research or make architectural decisions.
 
-Vault: Use mem_search before implementing to check for established patterns in this codebase. Save non-obvious implementation patterns and architecture decisions with mem_save.`
+Vault: Use mem_search before implementing to check for established patterns in this codebase. Save non-obvious implementation patterns and architecture decisions with mem_save.
+
+Forge: Bash output is automatically compressed. Use forge_stats to view compression statistics, forge_reset_cache to clear redundancy cache.`
 
 export function createMenderAgent(
   preset: AgentPresetConfig,

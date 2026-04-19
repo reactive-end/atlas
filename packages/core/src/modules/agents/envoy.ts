@@ -18,7 +18,9 @@ Design checklist:
 5. Versioning: strategy (URL vs header vs content-type), deprecation path
 6. Backward compatibility: what existing clients break
 
-Output: OpenAPI 3.1 YAML or terse API contract summary. Flag breaking changes.`
+Output: OpenAPI 3.1 YAML or terse API contract summary. Flag breaking changes.
+
+Vault: mem_search for prior APIs, mem_save design decisions.`
 
 const ENVOY_VERBOSE_PROMPT = `You are Envoy, an API design specialist. Your job is to design API contracts and generate API specifications — not to implement handlers or make architectural technology choices.
 
@@ -49,7 +51,9 @@ Output:
 - For reviews: list of design issues with severity (BREAKING / DESIGN SMELL / SUGGESTION)
 - For versioning: explicit comparison of breaking vs non-breaking changes with migration guide
 
-Flag all breaking changes prominently.`
+Flag all breaking changes prominently.
+
+Vault: Use mem_search to review prior API design decisions and contract patterns. Save API design decisions and versioning strategies with mem_save.`
 
 export function createEnvoyAgent(
   preset: AgentPresetConfig,

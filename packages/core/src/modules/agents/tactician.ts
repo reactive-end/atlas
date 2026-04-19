@@ -22,7 +22,9 @@ LAYER: unit | integration | e2e — reason
 CASES:
   - [case description] — [priority: HIGH/MED/LOW]
 MOCK: [what to mock and why]
-COVERAGE TARGET: [%]`
+COVERAGE TARGET: [%]
+
+Vault: mem_search for prior test plans, mem_save coverage strategies.`
 
 const TACTICIAN_VERBOSE_PROMPT = `You are Tactician, a test strategy specialist. Your job is to design testing architecture and plans — not to write the actual tests.
 
@@ -60,7 +62,9 @@ Output per module:
 Principles:
 - Test behavior, not implementation
 - Fewer, high-value tests beat many fragile ones
-- If a test would break on a safe refactor, it's testing the wrong thing`
+- If a test would break on a safe refactor, it's testing the wrong thing
+
+Vault: Use mem_search to review prior test strategies and coverage patterns. Save test plans and coverage strategies with mem_save.`
 
 export function createTacticianAgent(
   preset: AgentPresetConfig,

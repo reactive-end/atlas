@@ -26,6 +26,8 @@ import {
   handleMemGetObservation,
   handleMemSave,
   initializeVault,
+  getForgeStats,
+  resetRedundancyCache,
 } from '@atlas-opencode/core'
 
 type AtlasPluginState = {
@@ -49,7 +51,7 @@ function getOrCreateSessionState(sessionID: string, config: any): AtlasPluginSta
   return sessionStates.get(sessionID)!
 }
 
-function generateStatusMessage(state: AtlasPluginState): string {
+function generateStatusMessage(state: AtlasPluginState, config: any): string {
   const enabled = []
 
   if (state.agentMode === 'echo') {
@@ -59,7 +61,8 @@ function generateStatusMessage(state: AtlasPluginState): string {
   }
 
   enabled.push('Vault: active')
-  enabled.push('Forge: compressing outputs')
+  const bypassList = config.forge?.bypass?.join(', ') || 'none'
+  enabled.push(`Forge: compressing outputs (bypass: ${bypassList})`)
 
   const statusBars = [
     `Echo injections: ${state.stats.echoInjected}`,
@@ -164,7 +167,7 @@ const atlasPlugin: Plugin = async (input: PluginInput, _options?: PluginOptions)
         const sessionState = getOrCreateSessionState(sessionID, config)
         const args = (toolInput as Record<string, unknown>).args as Record<string, string> ?? {}
 
-        const { compressed, vaultSaved } = handleRealToolAfter(
+        const { compressed, vaultSaved, ratio } = handleRealToolAfter(
           toolInput.tool,
           sessionID,
           toolOutput.output,
@@ -173,7 +176,11 @@ const atlasPlugin: Plugin = async (input: PluginInput, _options?: PluginOptions)
         )
 
         if (compressed !== toolOutput.output) {
-          toolOutput.output = compressed
+          if (config.forge.showCompressionRatio && ratio > 0) {
+            toolOutput.output = `[Forge: -${Math.round(ratio * 100)}%]\n${compressed}`
+          } else {
+            toolOutput.output = compressed
+          }
           sessionState.stats.forgeCompressed++
         }
 
@@ -217,7 +224,7 @@ const atlasPlugin: Plugin = async (input: PluginInput, _options?: PluginOptions)
         try {
           await client.sendMessage({
             role: 'assistant',
-            parts: [{ type: 'text', text: generateStatusMessage(sessionState) }],
+            parts: [{ type: 'text', text: generateStatusMessage(sessionState, config) }],
           })
         } catch {
           // graceful
@@ -383,6 +390,27 @@ const atlasPlugin: Plugin = async (input: PluginInput, _options?: PluginOptions)
               config.vault.stripPrivateTags,
             )
             return result.content
+          },
+        }),
+      },
+    } : {}),
+
+    ...(config.forge.enabled ? {
+      tool: {
+        forge_stats: tool({
+          description: 'Get Forge compression statistics and cache status',
+          args: {},
+          async execute() {
+            const stats = getForgeStats(config.forge)
+            return JSON.stringify(stats, null, 2)
+          },
+        }),
+        forge_reset_cache: tool({
+          description: 'Clear the Forge redundancy cache to free memory',
+          args: {},
+          async execute() {
+            resetRedundancyCache()
+            return 'Forge redundancy cache cleared'
           },
         }),
       },

@@ -22,7 +22,9 @@ Output format:
 Reason: [one line]
 Fix: [direction, not full code]
 
-End with: VERDICT: APPROVE / REQUEST CHANGES / NEEDS DISCUSSION`
+End with: VERDICT: APPROVE / REQUEST CHANGES / NEEDS DISCUSSION
+
+Vault: mem_search for review patterns, mem_save recurring issues.`
 
 const MAGISTRATE_VERBOSE_PROMPT = `You are Magistrate, a code review specialist focused on tactical, structured reviews of specific diffs and pull requests.
 

@@ -36,10 +36,10 @@ describe('Integration Tests', () => {
       expect(result).toEqual({})
     })
 
-    it('bypasses commands already using forge', () => {
+    it('returns empty args for bash commands (no pre-processing)', () => {
       const ctx: ToolBeforeContext = {
         tool: 'bash',
-        args: { command: 'ls | forge wrap' },
+        args: { command: 'ls -la' },
         session: { id: 'test' },
       }
       const result = handleToolBefore(ctx, DEFAULT_CONFIG)

@@ -29,7 +29,9 @@ Rules:
 - READ-ONLY. Search only.
 - Line numbers always.
 - No preambles. No "Sure!" No "I'll help!"
-- Drop articles (the, a, an). Use fragments.`
+- Drop articles (the, a, an). Use fragments.
+
+Vault: mem_search before exploring, mem_save key findings.`
 
 const PATHFINDER_VERBOSE_PROMPT = `You are Pathfinder, a fast codebase navigator. Your role is to search the codebase and find specific files, patterns, and code locations.
 
@@ -47,7 +49,9 @@ Output format:
 - List each result with its file path, line number, and a brief description
 - Provide a concise answer summarizing what was found
 
-Important: You are read-only. Search and report only — never edit files.`
+Important: You are read-only. Search and report only — never edit files.
+
+Vault: Use mem_search to check previously explored file patterns and naming conventions. Save discovered codebase structure and search patterns with mem_save.`
 
 export function createPathfinderAgent(
   preset: AgentPresetConfig,

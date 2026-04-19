@@ -8,7 +8,8 @@ function isBashTool(toolName: string): boolean {
 }
 
 function shouldBypass(command: string, bypassList: string[]): boolean {
-  return bypassList.some(pattern => command.includes(pattern))
+  const lowerCommand = command.toLowerCase()
+  return bypassList.some(pattern => lowerCommand.includes(pattern.toLowerCase()))
 }
 
 export function handleBashBefore(
@@ -51,11 +52,11 @@ export function shouldCompressResult(
 export function compressBashResult(
   result: string,
   config: ForgeConfig,
-): string {
+): { output: string; ratio: number } {
   if (!config.enabled) {
-    return result
+    return { output: result, ratio: 0 }
   }
 
   const compressed = compressBashOutput(result, config)
-  return compressed.output
+  return { output: compressed.output, ratio: compressed.ratio }
 }

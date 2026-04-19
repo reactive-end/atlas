@@ -41,6 +41,23 @@ function buildVaultSection(config: AtlasConfig): string {
   return buildFullVaultPrompt()
 }
 
+function buildForgeSection(config: AtlasConfig): string {
+  if (!config.forge.enabled) {
+    return ''
+  }
+
+  const bypassList = config.forge.bypass.join(', ')
+
+  return `Forge: Bash output compression is active. Outputs from bash/shell/terminal/exec/command tools are automatically compressed to save tokens.
+- Strips ANSI codes, progress bars, timestamps, spinners
+- Deduplicates repeated lines
+- Groups file paths by directory
+- Truncates to max ${config.forge.maxLines} lines
+- Summarizes outputs over ${config.forge.summarizeThresholdLines} lines
+- Bypassed commands: ${bypassList}
+- Tools: forge_stats (view compression stats), forge_reset_cache (clear redundancy cache)`
+}
+
 export function handleSystemTransform(
   ctx: SystemTransformContext,
   config: AtlasConfig,
@@ -67,6 +84,11 @@ export function handleSystemTransform(
   const vaultSection = buildVaultSection(config)
   if (vaultSection) {
     sections.push(vaultSection)
+  }
+
+  const forgeSection = buildForgeSection(config)
+  if (forgeSection) {
+    sections.push(forgeSection)
   }
 
   return sections.filter(s => s.length > 0).join('\n\n---\n\n')
@@ -105,6 +127,11 @@ export function buildAllSystemSections(
   const vaultSection = buildVaultSection(config)
   if (vaultSection) {
     sections.push(vaultSection)
+  }
+
+  const forgeSection = buildForgeSection(config)
+  if (forgeSection) {
+    sections.push(forgeSection)
   }
 
   return sections.filter(s => s.length > 0)

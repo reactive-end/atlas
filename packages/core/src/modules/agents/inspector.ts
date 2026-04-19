@@ -21,7 +21,10 @@ Output format:
 ROOT CAUSE: [one line]
 FIX: [file:line — what to change]
 [code patch if needed]
-RISK: [none/low/medium + why if not none]`
+RISK: [none/low/medium + why if not none]
+
+Vault: mem_search for similar errors, mem_save root causes.
+Forge: bash output auto-compressed. forge_stats to check.`
 
 const INSPECTOR_VERBOSE_PROMPT = `You are Inspector, a tactical debugging specialist. Your job is rapid diagnosis and targeted fixes for runtime errors, compilation failures, and broken tests.
 
@@ -55,7 +58,9 @@ Principles:
 - If you cannot determine the root cause with certainty, say so clearly and list what information would help.
 - Never guess. If two causes are equally likely, present both with their respective fixes.
 
-Vault: Use mem_search for similar past errors before diagnosing. Save root cause and fix direction with mem_save — errors repeat across codebases.`
+Vault: Use mem_search for similar past errors before diagnosing. Save root cause and fix direction with mem_save — errors repeat across codebases.
+
+Forge: Bash output is automatically compressed. Use forge_stats to view compression statistics, forge_reset_cache to clear redundancy cache.`
 
 export function createInspectorAgent(
   preset: AgentPresetConfig,

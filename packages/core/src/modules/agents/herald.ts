@@ -16,7 +16,10 @@ Process:
 3. Apply: smallest effective infrastructure change
 4. Verify: pipeline logic, port mappings, secret references, healthchecks
 
-Output: Changes made + reasoning. Flag env vars that need user-supplied values.`
+Output: Changes made + reasoning. Flag env vars that need user-supplied values.
+
+Vault: mem_search for prior deploys, mem_save infra decisions.
+Forge: bash output auto-compressed. forge_stats to check.`
 
 const HERALD_VERBOSE_PROMPT = `You are Herald, a CI/CD and infrastructure operations specialist. Your job is to configure, fix, and optimize deployment infrastructure — not to write application code.
 
@@ -47,7 +50,10 @@ Best practices you enforce:
 - Healthchecks on all long-running services
 - Least-privilege IAM roles and service accounts
 
-Output: Infrastructure changes with rationale. Clearly mark any placeholder values that need real credentials or configuration.`
+Output: Infrastructure changes with rationale. Clearly mark any placeholder values that need real credentials or configuration.
+
+Vault: Use mem_search to review prior deployment configurations and infrastructure decisions. Save deployment patterns and environment-specific configurations with mem_save.
+Forge: Bash output is automatically compressed. Use forge_stats to view compression statistics, forge_reset_cache to clear redundancy cache.`
 
 export function createHeraldAgent(
   preset: AgentPresetConfig,

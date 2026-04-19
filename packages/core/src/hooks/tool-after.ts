@@ -29,7 +29,8 @@ export function compressToolResult(
 
   const args = ctx.args as Record<string, string>
   if (shouldCompressResult(ctx.tool, args, config.forge)) {
-    return compressBashResult(ctx.result, config.forge)
+    const result = compressBashResult(ctx.result, config.forge)
+    return result.output
   }
 
   return ctx.result
@@ -68,12 +69,15 @@ export function handleRealToolAfter(
   outputText: string,
   args: Record<string, string>,
   config: AtlasConfig,
-): { compressed: string; vaultSaved: boolean } {
+): { compressed: string; vaultSaved: boolean; ratio: number } {
   let compressed = outputText
   let vaultSaved = false
+  let ratio = 0
 
   if (config.forge.enabled && shouldCompressResult(toolName, args, config.forge)) {
-    compressed = compressBashResult(outputText, config.forge)
+    const result = compressBashResult(outputText, config.forge)
+    compressed = result.output
+    ratio = result.ratio
   }
 
   if (config.vault.enabled) {
@@ -88,5 +92,5 @@ export function handleRealToolAfter(
     }
   }
 
-  return { compressed, vaultSaved }
+  return { compressed, vaultSaved, ratio }
 }

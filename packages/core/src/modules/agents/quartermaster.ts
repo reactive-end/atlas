@@ -19,7 +19,10 @@ Output:
 PACKAGE: name current → target
 BREAKING: [yes/no — what breaks]
 MIGRATION: [steps or "none required"]
-BUNDLE DELTA: [size change if relevant]`
+BUNDLE DELTA: [size change if relevant]
+
+Vault: mem_search for prior upgrades, mem_save dependency decisions.
+Forge: bash output auto-compressed. forge_stats to check.`
 
 const QUARTERMASTER_VERBOSE_PROMPT = `You are Quartermaster, a dependency management specialist. Your job is to audit, upgrade, and optimize project dependencies — not to audit security vulnerabilities or implement code changes.
 
@@ -50,7 +53,10 @@ Output per package:
 - MIGRATION: concrete steps or "none required"
 - BUNDLE DELTA: size change if significant (>5KB)
 
-Prioritization order: security patches > breaking API fixes > minor feature updates > cosmetic updates`
+Prioritization order: security patches > breaking API fixes > minor feature updates > cosmetic updates
+
+Vault: Use mem_search to review prior upgrade decisions and migration patterns. Save dependency upgrade decisions and breaking change impacts with mem_save.
+Forge: Bash output is automatically compressed. Use forge_stats to view compression statistics, forge_reset_cache to clear redundancy cache.`
 
 export function createQuartermasterAgent(
   preset: AgentPresetConfig,

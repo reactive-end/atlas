@@ -161,3 +161,21 @@ export function resetRedundancyCache(): void {
   redundancyCache?.clear()
   redundancyCache = null
 }
+
+export function getForgeStats(config: ForgeConfig): {
+  cacheSize: number
+  cacheEnabled: boolean
+  maxLines: number
+  summarizeThresholdLines: number
+  bypass: string[]
+  enabled: boolean
+} {
+  return {
+    cacheSize: redundancyCache?.size ?? 0,
+    cacheEnabled: config.redundancyCacheEnabled,
+    maxLines: config.maxLines,
+    summarizeThresholdLines: config.summarizeThresholdLines,
+    bypass: config.bypass,
+    enabled: config.enabled,
+  }
+}
