@@ -128,6 +128,17 @@ All 18 agents receive the Vault protocol via `system.transform` injection. They 
 
 ## Installation
 
+### Prerequisites
+
+First, ensure Atlas loads as an OpenCode plugin by installing it in your config directory:
+
+```bash
+cd ~/.config/opencode
+npm install @atlas-opencode/core
+```
+
+> **Why?** OpenCode loads plugins from its config directory's `node_modules`. Without this, Atlas is just a really organized folder, not a working plugin.
+
 ### Linux / macOS
 
 ```bash
