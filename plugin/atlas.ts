@@ -3,7 +3,7 @@
 // Place in ~/.config/opencode/plugins/ or .opencode/plugins/
 
 import { type Plugin, type PluginInput, type PluginOptions, tool } from '@opencode-ai/plugin'
-import type { AgentSdkConfig } from '@atlas-opencode/core'
+import type { AgentSdkConfig, AtlasConfig } from '@atlas-opencode/core'
 
 import {
   loadConfig,
@@ -42,7 +42,7 @@ type AtlasPluginState = {
 // State per session - Map<sessionID, state>
 const sessionStates = new Map<string, AtlasPluginState>()
 
-function getOrCreateSessionState(sessionID: string, config: any): AtlasPluginState {
+function getOrCreateSessionState(sessionID: string, config: AtlasConfig): AtlasPluginState {
   if (!sessionStates.has(sessionID)) {
     sessionStates.set(sessionID, createInitialState(config))
   }
@@ -204,8 +204,8 @@ const atlasPlugin: Plugin = async (input: PluginInput, _options?: PluginOptions)
 
       // Extract text from parts
       const text = output.parts
-        .filter((p: any) => p.type === 'text')
-        .map((p: any) => p.text || '')
+        .filter((p): p is { type: 'text'; text: string; [key: string]: unknown } => p.type === 'text')
+        .map(p => p.text || '')
         .join('')
         .trim()
 
@@ -215,13 +215,18 @@ const atlasPlugin: Plugin = async (input: PluginInput, _options?: PluginOptions)
       if (text.startsWith('/atlas-status')) {
         // Send status as a system/assistant message
         try {
-          await client.sendMessage({
-            role: 'assistant',
-            parts: [{ type: 'text', text: generateStatusMessage(sessionState) }],
+          await client.tui.showToast({
+            body: {
+              title: 'Atlas Status',
+              message: generateStatusMessage(sessionState),
+              variant: 'info',
+              duration: 10000,
+            },
           })
         } catch {
           // graceful
         }
+        output.parts.length = 0
         return
       }
 
@@ -233,13 +238,18 @@ const atlasPlugin: Plugin = async (input: PluginInput, _options?: PluginOptions)
         )
         sessionStates.set(sessionID, newState)
         try {
-          await client.sendMessage({
-            role: 'assistant',
-            parts: [{ type: 'text', text: `Atlas Echo mode set to: ${newState.echoLevel}` }],
+          await client.tui.showToast({
+            body: {
+              title: 'Atlas Echo',
+              message: `Echo mode set to: ${newState.echoLevel}`,
+              variant: 'success',
+              duration: 3000,
+            },
           })
         } catch {
           // graceful
         }
+        output.parts.length = 0
         return
       }
 
@@ -250,13 +260,18 @@ const atlasPlugin: Plugin = async (input: PluginInput, _options?: PluginOptions)
         )
         sessionStates.set(sessionID, newState)
         try {
-          await client.sendMessage({
-            role: 'assistant',
-            parts: [{ type: 'text', text: 'Atlas Echo mode disabled (verbose mode)' }],
+          await client.tui.showToast({
+            body: {
+              title: 'Atlas Echo',
+              message: 'Echo compression disabled (verbose mode)',
+              variant: 'success',
+              duration: 3000,
+            },
           })
         } catch {
           // graceful
         }
+        output.parts.length = 0
         return
       }
 
@@ -271,9 +286,12 @@ const atlasPlugin: Plugin = async (input: PluginInput, _options?: PluginOptions)
           
           // Send fun feedback message occasionally (every 5 messages)
           if (sessionState.stats.vaultSaved % 5 === 0 && sessionState.stats.vaultSaved > 0) {
-            await client.sendMessage({
-              role: 'assistant',
-              parts: [{ type: 'text', text: funMessages.vault.save }],
+            await client.tui.showToast({
+              body: {
+                message: funMessages.vault.save,
+                variant: 'info',
+                duration: 3000,
+              },
             })
           }
         } catch {
@@ -305,15 +323,17 @@ const atlasPlugin: Plugin = async (input: PluginInput, _options?: PluginOptions)
       try {
         // Clean up state when session is deleted
         if (event.type === 'session.deleted') {
-          const ev = event as { properties: { sessionID?: string } }
-          const sessionID = ev.properties?.sessionID
+          const ev = event as { properties: { info?: { id: string } } }
+          const sessionID = ev.properties?.info?.id
           if (sessionID) {
             sessionStates.delete(sessionID)
           }
           return
         }
 
-        const sessionID = (event as any).properties?.sessionID
+        const props = event as { type: string; properties: Record<string, unknown> }
+        const info = props.properties?.info as { id?: string; sessionID?: string } | undefined
+        const sessionID = info?.sessionID ?? info?.id
         if (!sessionID) return
 
         const sessionState = getOrCreateSessionState(sessionID, config)

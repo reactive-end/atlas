@@ -87,6 +87,17 @@ export const AGENT_NAMES: AgentName[] = [
   'artisan',
   'mender',
   'tribunal',
+  'inspector',
+  'scribe',
+  'curator',
+  'sentinel',
+  'herald',
+  'lorekeeper',
+  'alchemist',
+  'magistrate',
+  'envoy',
+  'quartermaster',
+  'tactician',
 ]
 
 export function createInitialState(config: AtlasConfig): PluginState {
