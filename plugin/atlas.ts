@@ -211,8 +211,11 @@ const atlasPlugin: Plugin = async (input: PluginInput, _options?: PluginOptions)
 
       // Extract text from parts
       const text = output.parts
-        .filter((p): p is { type: 'text'; text: string; [key: string]: unknown } => p.type === 'text')
-        .map(p => p.text || '')
+        .filter((p): p is { type: 'text'; text: string; [key: string]: unknown } => {
+          const part = p as Record<string, unknown>
+          return part.type === 'text' && typeof part.text === 'string'
+        })
+        .map(p => p.text)
         .join('')
         .trim()
 
@@ -290,6 +293,7 @@ const atlasPlugin: Plugin = async (input: PluginInput, _options?: PluginOptions)
             ? stripPrivateTags(text)
             : text
           vaultSaveObservation(sessionID, `[User] ${content}`, 'user-prompt')
+          sessionState.stats.vaultSaved++
           
           // Send fun feedback message occasionally (every 5 messages)
           if (sessionState.stats.vaultSaved % 5 === 0 && sessionState.stats.vaultSaved > 0) {
