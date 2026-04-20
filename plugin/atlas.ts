@@ -3,7 +3,7 @@
 // Place in ~/.config/opencode/plugins/ or .opencode/plugins/
 
 import { type Plugin, type PluginInput, type PluginOptions, tool } from '@opencode-ai/plugin'
-import type { AgentSdkConfig } from '@atlas-opencode/core'
+import type { AgentSdkConfig, AtlasConfig } from '@atlas-opencode/core'
 
 import {
   loadConfig,
@@ -44,14 +44,14 @@ type AtlasPluginState = {
 // State per session - Map<sessionID, state>
 const sessionStates = new Map<string, AtlasPluginState>()
 
-function getOrCreateSessionState(sessionID: string, config: any): AtlasPluginState {
+function getOrCreateSessionState(sessionID: string, config: AtlasConfig): AtlasPluginState {
   if (!sessionStates.has(sessionID)) {
     sessionStates.set(sessionID, createInitialState(config))
   }
   return sessionStates.get(sessionID)!
 }
 
-function generateStatusMessage(state: AtlasPluginState, config: any): string {
+function generateStatusMessage(state: AtlasPluginState, config: AtlasConfig): string {
   const enabled = []
 
   if (state.agentMode === 'echo') {
@@ -211,8 +211,8 @@ const atlasPlugin: Plugin = async (input: PluginInput, _options?: PluginOptions)
 
       // Extract text from parts
       const text = output.parts
-        .filter((p: any) => p.type === 'text')
-        .map((p: any) => p.text || '')
+        .filter((p): p is { type: 'text'; text: string; [key: string]: unknown } => p.type === 'text')
+        .map(p => p.text || '')
         .join('')
         .trim()
 
@@ -222,13 +222,18 @@ const atlasPlugin: Plugin = async (input: PluginInput, _options?: PluginOptions)
       if (text.startsWith('/atlas-status')) {
         // Send status as a system/assistant message
         try {
-          await client.sendMessage({
-            role: 'assistant',
-            parts: [{ type: 'text', text: generateStatusMessage(sessionState, config) }],
+          await client.tui.showToast({
+            body: {
+              title: 'Atlas Status',
+              message: generateStatusMessage(sessionState, config),
+              variant: 'info',
+              duration: 10000,
+            },
           })
         } catch {
           // graceful
         }
+        output.parts.length = 0
         return
       }
 
@@ -240,13 +245,18 @@ const atlasPlugin: Plugin = async (input: PluginInput, _options?: PluginOptions)
         )
         sessionStates.set(sessionID, newState)
         try {
-          await client.sendMessage({
-            role: 'assistant',
-            parts: [{ type: 'text', text: `Atlas Echo mode set to: ${newState.echoLevel}` }],
+          await client.tui.showToast({
+            body: {
+              title: 'Atlas Echo',
+              message: `Echo mode set to: ${newState.echoLevel}`,
+              variant: 'success',
+              duration: 3000,
+            },
           })
         } catch {
           // graceful
         }
+        output.parts.length = 0
         return
       }
 
@@ -257,13 +267,18 @@ const atlasPlugin: Plugin = async (input: PluginInput, _options?: PluginOptions)
         )
         sessionStates.set(sessionID, newState)
         try {
-          await client.sendMessage({
-            role: 'assistant',
-            parts: [{ type: 'text', text: 'Atlas Echo mode disabled (verbose mode)' }],
+          await client.tui.showToast({
+            body: {
+              title: 'Atlas Echo',
+              message: 'Echo compression disabled (verbose mode)',
+              variant: 'success',
+              duration: 3000,
+            },
           })
         } catch {
           // graceful
         }
+        output.parts.length = 0
         return
       }
 
@@ -278,9 +293,12 @@ const atlasPlugin: Plugin = async (input: PluginInput, _options?: PluginOptions)
           
           // Send fun feedback message occasionally (every 5 messages)
           if (sessionState.stats.vaultSaved % 5 === 0 && sessionState.stats.vaultSaved > 0) {
-            await client.sendMessage({
-              role: 'assistant',
-              parts: [{ type: 'text', text: funMessages.vault.save }],
+            await client.tui.showToast({
+              body: {
+                message: funMessages.vault.save,
+                variant: 'info',
+                duration: 3000,
+              },
             })
           }
         } catch {
@@ -312,15 +330,17 @@ const atlasPlugin: Plugin = async (input: PluginInput, _options?: PluginOptions)
       try {
         // Clean up state when session is deleted
         if (event.type === 'session.deleted') {
-          const ev = event as { properties: { sessionID?: string } }
-          const sessionID = ev.properties?.sessionID
+          const ev = event as { properties: { info?: { id: string } } }
+          const sessionID = ev.properties?.info?.id
           if (sessionID) {
             sessionStates.delete(sessionID)
           }
           return
         }
 
-        const sessionID = (event as any).properties?.sessionID
+        const props = event as { type: string; properties: Record<string, unknown> }
+        const info = props.properties?.info as { id?: string; sessionID?: string } | undefined
+        const sessionID = info?.sessionID ?? info?.id
         if (!sessionID) return
 
         const sessionState = getOrCreateSessionState(sessionID, config)
@@ -337,82 +357,81 @@ const atlasPlugin: Plugin = async (input: PluginInput, _options?: PluginOptions)
       }
     },
 
-    ...(vaultReady ? {
+    ...((vaultReady || config.forge.enabled) ? {
       tool: {
-        mem_search: tool({
-          description: 'Search persistent memories by semantic query. Returns compact results.',
-          args: {
-            query: tool.schema.string().describe('Search query for memories'),
-            limit: tool.schema.number().describe('Max results (default 10)').optional(),
-          },
-          async execute(args) {
-            const result = handleMemSearch(
-              args.query,
-              args.limit ?? 10,
-              config.vault.stripPrivateTags,
-            )
-            return result.content
-          },
-        }),
-        mem_timeline: tool({
-          description: 'Get chronological memory entries for the current session.',
-          args: {
-            session_id: tool.schema.string().describe('Session ID'),
-            limit: tool.schema.number().describe('Max entries (default 20)').optional(),
-          },
-          async execute(args) {
-            const result = handleMemTimeline(args.session_id, args.limit ?? 20)
-            return result.content
-          },
-        }),
-        mem_get_observation: tool({
-          description: 'Retrieve full content of a specific memory entry by ID.',
-          args: {
-            id: tool.schema.string().describe('Observation ID'),
-          },
-          async execute(args) {
-            const result = handleMemGetObservation(args.id)
-            return result.content
-          },
-        }),
-        mem_save: tool({
-          description: 'Save an observation to persistent memory.',
-          args: {
-            session_id: tool.schema.string().describe('Session ID'),
-            content: tool.schema.string().describe('Content to save'),
-            category: tool.schema.string().describe('Category (default: manual)').optional(),
-          },
-          async execute(args) {
-            const result = handleMemSave(
-              args.session_id,
-              args.content,
-              args.category ?? 'manual',
-              config.vault.stripPrivateTags,
-            )
-            return result.content
-          },
-        }),
-      },
-    } : {}),
-
-    ...(config.forge.enabled ? {
-      tool: {
-        forge_stats: tool({
-          description: 'Get Forge compression statistics and cache status',
-          args: {},
-          async execute() {
-            const stats = getForgeStats(config.forge)
-            return JSON.stringify(stats, null, 2)
-          },
-        }),
-        forge_reset_cache: tool({
-          description: 'Clear the Forge redundancy cache to free memory',
-          args: {},
-          async execute() {
-            resetRedundancyCache()
-            return 'Forge redundancy cache cleared'
-          },
-        }),
+        ...(vaultReady ? {
+          mem_search: tool({
+            description: 'Search persistent memories by semantic query. Returns compact results.',
+            args: {
+              query: tool.schema.string().describe('Search query for memories'),
+              limit: tool.schema.number().describe('Max results (default 10)').optional(),
+            },
+            async execute(args) {
+              const result = handleMemSearch(
+                args.query,
+                args.limit ?? 10,
+                config.vault.stripPrivateTags,
+              )
+              return result.content
+            },
+          }),
+          mem_timeline: tool({
+            description: 'Get chronological memory entries for the current session.',
+            args: {
+              session_id: tool.schema.string().describe('Session ID'),
+              limit: tool.schema.number().describe('Max entries (default 20)').optional(),
+            },
+            async execute(args) {
+              const result = handleMemTimeline(args.session_id, args.limit ?? 20)
+              return result.content
+            },
+          }),
+          mem_get_observation: tool({
+            description: 'Retrieve full content of a specific memory entry by ID.',
+            args: {
+              id: tool.schema.string().describe('Observation ID'),
+            },
+            async execute(args) {
+              const result = handleMemGetObservation(args.id)
+              return result.content
+            },
+          }),
+          mem_save: tool({
+            description: 'Save an observation to persistent memory.',
+            args: {
+              session_id: tool.schema.string().describe('Session ID'),
+              content: tool.schema.string().describe('Content to save'),
+              category: tool.schema.string().describe('Category (default: manual)').optional(),
+            },
+            async execute(args) {
+              const result = handleMemSave(
+                args.session_id,
+                args.content,
+                args.category ?? 'manual',
+                config.vault.stripPrivateTags,
+              )
+              return result.content
+            },
+          }),
+        } : {}),
+        ...(config.forge.enabled ? {
+          forge_stats: tool({
+            description: 'Get Forge compression statistics and cache status',
+            args: {},
+            async execute() {
+              const stats = getForgeStats(config.forge)
+              return JSON.stringify(stats, null, 2)
+            },
+          }),
+          forge_reset_cache: tool({
+            description: 'Clear the Forge redundancy cache to free memory',
+            args: {},
+            async execute() {
+              resetRedundancyCache()
+              return 'Forge redundancy cache cleared'
+            },
+          }),
+        } : {}),
       },
     } : {}),
   }

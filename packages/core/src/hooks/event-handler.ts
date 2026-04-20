@@ -110,27 +110,19 @@ export function handleRealEvent(
 
     case 'message.updated': {
       if (!config.vault.enabled) return
-      const message = event.properties['message'] as {
+      const info = event.properties['info'] as {
+        sessionID?: string
         role?: string
-        parts?: Array<{ type: string; text?: string }>
       } | undefined
-      if (!message || message.role !== 'user') return
+      if (!info || info.role !== 'user') return
 
-      const sessionID = event.properties['sessionID'] as string | undefined
+      const sessionID = info.sessionID
       if (!sessionID) return
 
-      const textParts = message.parts
-        ?.filter(p => p.type === 'text' && p.text)
-        .map(p => p.text as string)
-
-      if (!textParts || textParts.length === 0) return
-
+      // Note: Message parts are not available in this event — user message
+      // content is captured via the chat.message hook instead.
+      // This handler only ensures the session is initialized for Vault.
       ensureSession(sessionID)
-      const content = config.vault.stripPrivateTags
-        ? stripPrivateTags(textParts.join('\n'))
-        : textParts.join('\n')
-
-      vaultSaveObservation(sessionID, `[User] ${content}`, 'user-prompt')
       break
     }
   }
