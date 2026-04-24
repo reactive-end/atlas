@@ -63,7 +63,7 @@
           "additionalProperties": {
             "type": "object",
             "patternProperties": {
-              "^(atlas|pathfinder|archivist|elder|artisan|mender|tribunal)$": {
+              "^(atlas|pathfinder|archivist|elder|artisan|mender|tribunal|inspector|scribe|curator|sentinel|herald|lorekeeper|alchemist|magistrate|envoy|quartermaster|tactician)$": {
                 "type": "object",
                 "properties": {
                   "model": {
@@ -177,6 +177,46 @@
           "type": "boolean",
           "default": true,
           "description": "Strip @private tagged observations from memory recall"
+        }
+      },
+      "additionalProperties": false
+    },
+    "codex": {
+      "type": "object",
+      "description": "Repository indexing and code exploration settings",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable Codex repository indexing"
+        },
+        "indexPath": {
+          "type": "string",
+          "default": ".atlas/index.md",
+          "description": "Path to the generated index markdown file"
+        },
+        "includePatterns": {
+          "type": "array",
+          "items": { "type": "string" },
+          "default": ["**/src/**/*.{ts,tsx,js,jsx}", "**/lib/**/*.ts"],
+          "description": "Glob patterns for files to include in indexing"
+        },
+        "excludePatterns": {
+          "type": "array",
+          "items": { "type": "string" },
+          "default": ["**/node_modules/**", "**/dist/**", "**/*.test.ts", "**/*.spec.ts", "**/*.d.ts", "**/.atlas/**"],
+          "description": "Glob patterns for files to exclude from indexing"
+        },
+        "maxFileSize": {
+          "type": "number",
+          "minimum": 1,
+          "default": 50000,
+          "description": "Maximum file size in bytes to analyze"
+        },
+        "autoIndexOnStart": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically re-index repository on startup"
         }
       },
       "additionalProperties": false

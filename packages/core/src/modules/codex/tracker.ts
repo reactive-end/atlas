@@ -1,6 +1,6 @@
 import { readFileSync, existsSync, readdirSync, statSync } from 'node:fs'
 import { join, relative } from 'node:path'
-import type { RepoIndex, IndexedFile, FileDelta } from './types'
+import type { RepoIndex, IndexedFile, FileDelta } from '@/modules/codex/types'
 
 export function readExistingIndex(indexPath: string): RepoIndex | null {
   if (!existsSync(indexPath)) {

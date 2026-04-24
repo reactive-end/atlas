@@ -1,4 +1,5 @@
 import type { EchoLevel, AgentMode, PresetName } from '@/types'
+import type { CodexConfig } from '@/modules/codex/types'
 
 export interface AgentPresetConfig {
   model: string
@@ -40,15 +41,6 @@ export interface VaultConfig {
   enabled: boolean
   injectMemoryProtocol: boolean
   stripPrivateTags: boolean
-}
-
-export interface CodexConfig {
-  enabled: boolean
-  indexPath: string
-  includePatterns: string[]
-  excludePatterns: string[]
-  maxFileSize: number
-  autoIndexOnStart: boolean
 }
 
 export interface AtlasConfig {

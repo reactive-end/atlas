@@ -1,5 +1,5 @@
 import { readFileSync, statSync } from 'node:fs'
-import type { IndexedFile } from './types'
+import type { IndexedFile } from '@/modules/codex/types'
 
 const EXPORT_REGEX = /^export\s+(?:function|const|let|var|class|interface|type|enum|default\s+(?:function|const|class))\s+(\w+)/gm
 

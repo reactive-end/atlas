@@ -1,6 +1,6 @@
 import { existsSync, mkdirSync, writeFileSync, statSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
-import type { IndexedFile } from './types'
+import type { IndexedFile } from '@/modules/codex/types'
 
 export function ensureAtlasDir(repoRoot: string): string {
   const atlasDir = join(repoRoot, '.atlas')

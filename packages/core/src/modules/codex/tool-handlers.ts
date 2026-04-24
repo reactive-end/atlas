@@ -1,7 +1,7 @@
 import { readFileSync, existsSync } from 'node:fs'
-import type { CodexConfig } from './types'
-import { parseIndexMarkdown } from './tracker'
-import { runCodexIndex } from './codex'
+import type { CodexConfig } from '@/modules/codex/types'
+import { parseIndexMarkdown } from '@/modules/codex/tracker'
+import { runCodexIndex } from '@/modules/codex/codex'
 
 export interface CodexToolResult {
   content: string

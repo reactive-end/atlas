@@ -1,11 +1,11 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
-import { parseIndexMarkdown, calculateDeltas, scanFiles } from './tracker'
-import { analyzeFile } from './analyzer'
-import { handleCodexSearch } from './tool-handlers'
+import { parseIndexMarkdown, calculateDeltas, scanFiles } from '@/modules/codex/tracker'
+import { analyzeFile } from '@/modules/codex/analyzer'
+import { handleCodexSearch } from '@/modules/codex/tool-handlers'
 import * as fs from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
-import type { RepoIndex } from './types'
+import type { RepoIndex } from '@/modules/codex/types'
 
 describe('Codex Module', () => {
   describe('parseIndexMarkdown', () => {

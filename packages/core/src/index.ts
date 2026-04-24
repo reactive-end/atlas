@@ -60,7 +60,8 @@ export type { MemToolResult } from '@/modules/vault/tool-handlers'
 export { runCodexIndex } from '@/modules/codex/codex'
 export { handleCodexSearch, handleCodexReindex } from '@/modules/codex/tool-handlers'
 export { buildCodexPrompt } from '@/modules/codex/prompt'
-export type { CodexConfig } from '@/config/schema'
+export { initializeCodex } from '@/modules/codex/initializer'
+export type { CodexConfig } from '@/modules/codex/types'
 
 // Agent factories (for building all agent prompts)
 export { createAtlasAgent } from '@/modules/agents/atlas'

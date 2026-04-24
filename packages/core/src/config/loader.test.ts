@@ -46,9 +46,9 @@ describe('Config Loader', () => {
     expect(config.agents.presets).toHaveProperty('premium')
   })
 
-  it('each preset has all 7 agents', () => {
+  it('each preset has all 18 agents', () => {
     const config = loadConfig()
-    const agentNames = ['atlas', 'pathfinder', 'archivist', 'elder', 'artisan', 'mender', 'tribunal']
+    const agentNames = ['atlas', 'pathfinder', 'archivist', 'elder', 'artisan', 'mender', 'tribunal', 'inspector', 'scribe', 'curator', 'sentinel', 'herald', 'lorekeeper', 'alchemist', 'magistrate', 'envoy', 'quartermaster', 'tactician']
 
     for (const presetName of Object.keys(config.agents.presets)) {
       const preset = config.agents.presets[presetName as keyof typeof config.agents.presets]

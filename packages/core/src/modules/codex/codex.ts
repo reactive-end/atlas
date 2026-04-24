@@ -1,7 +1,7 @@
-import type { CodexConfig, IndexStats, IndexedFile } from './types'
-import { scanFiles, readExistingIndex, calculateDeltas } from './tracker'
-import { analyzeFile } from './analyzer'
-import { ensureAtlasDir, writeIndexMd } from './writer'
+import type { CodexConfig, IndexStats, IndexedFile } from '@/modules/codex/types'
+import { scanFiles, readExistingIndex, calculateDeltas } from '@/modules/codex/tracker'
+import { analyzeFile } from '@/modules/codex/analyzer'
+import { ensureAtlasDir, writeIndexMd } from '@/modules/codex/writer'
 import { join } from 'node:path'
 
 export function runCodexIndex(repoRoot: string, config: CodexConfig): IndexStats {
