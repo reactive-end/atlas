@@ -77,6 +77,10 @@ function validateConfig(config: AtlasConfig): void {
   if (config.forge.dedupMin < 2) {
     throw new Error('forge.dedupMin must be at least 2')
   }
+
+  if (config.codex.maxFileSize < 1) {
+    throw new Error('codex.maxFileSize must be at least 1')
+  }
 }
 
 export function loadConfig(): AtlasConfig {

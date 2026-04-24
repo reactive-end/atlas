@@ -42,11 +42,21 @@ export interface VaultConfig {
   stripPrivateTags: boolean
 }
 
+export interface CodexConfig {
+  enabled: boolean
+  indexPath: string
+  includePatterns: string[]
+  excludePatterns: string[]
+  maxFileSize: number
+  autoIndexOnStart: boolean
+}
+
 export interface AtlasConfig {
   echo: EchoConfig
   agents: AgentsConfig
   forge: ForgeConfig
   vault: VaultConfig
+  codex: CodexConfig
 }
 
 export const DEFAULT_CONFIG: AtlasConfig = {
@@ -160,5 +170,20 @@ export const DEFAULT_CONFIG: AtlasConfig = {
     enabled: true,
     injectMemoryProtocol: true,
     stripPrivateTags: true,
+  },
+  codex: {
+    enabled: true,
+    indexPath: '.atlas/index.md',
+    includePatterns: ['src/**/*.{ts,tsx,js,jsx}', 'lib/**/*.ts'],
+    excludePatterns: [
+      'node_modules/**',
+      '**/dist/**',
+      '**/*.test.ts',
+      '**/*.spec.ts',
+      '**/*.d.ts',
+      '.atlas/**',
+    ],
+    maxFileSize: 50000,
+    autoIndexOnStart: true,
   },
 }

@@ -118,6 +118,18 @@ Persistent memory between sessions via embedded SQLite (`bun:sqlite`, zero exter
 
 All 18 agents receive the Vault protocol via `system.transform` injection. They know to `mem_search` before acting and `mem_save` their key findings when done.
 
+### Codex
+
+Because wandering blind through a codebase is so 2023. Codex is Atlas's map of the realm — it reads every scroll (file), notes what's inside, and draws a cartography so neither you nor the agents ever have to guess where the dragon (bug) lives.
+
+How it works:
+- On first session start, Codex silently scans your repo and builds `.atlas/index.md`
+- Only files that changed get re-analyzed — incremental updates, no wasted CPU
+- Agents use `codex_search("vault CRUD")` instead of guessing file names
+- The index is Markdown-plain and compact: ~15 tokens per file on disk
+
+It's like having a librarian who has already read every book and can tell you exactly which shelf to check. Pathfinder still does the deep digging, but Codex tells him where to start.
+
 ## TUI Commands
 
 | Command | Effect |

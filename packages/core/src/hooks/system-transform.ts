@@ -4,6 +4,7 @@ import { buildEchoPrompt, buildDisabledPrompt } from '@/modules/echo/prompt-buil
 import { shouldDisableEcho } from '@/modules/echo/auto-clarity'
 import { buildFullVaultPrompt } from '@/modules/vault/memory-protocol'
 import { AGENT_FACTORIES, ALL_AGENT_NAMES } from '@/modules/agents/registry'
+import { buildCodexPrompt } from '@/modules/codex/prompt'
 
 function getActivePresets(config: AtlasConfig): AgentPresetsMap {
   return config.agents.presets[config.agents.preset]
@@ -58,6 +59,14 @@ function buildForgeSection(config: AtlasConfig): string {
 - Tools: forge_stats (view compression stats), forge_reset_cache (clear redundancy cache)`
 }
 
+function buildCodexSection(config: AtlasConfig): string {
+  if (!config.codex.enabled) {
+    return ''
+  }
+
+  return buildCodexPrompt()
+}
+
 export function handleSystemTransform(
   ctx: SystemTransformContext,
   config: AtlasConfig,
@@ -89,6 +98,11 @@ export function handleSystemTransform(
   const forgeSection = buildForgeSection(config)
   if (forgeSection) {
     sections.push(forgeSection)
+  }
+
+  const codexSection = buildCodexSection(config)
+  if (codexSection) {
+    sections.push(codexSection)
   }
 
   return sections.filter(s => s.length > 0).join('\n\n---\n\n')
@@ -132,6 +146,11 @@ export function buildAllSystemSections(
   const forgeSection = buildForgeSection(config)
   if (forgeSection) {
     sections.push(forgeSection)
+  }
+
+  const codexSection = buildCodexSection(config)
+  if (codexSection) {
+    sections.push(codexSection)
   }
 
   return sections.filter(s => s.length > 0)

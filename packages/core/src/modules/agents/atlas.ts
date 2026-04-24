@@ -240,6 +240,10 @@ Can tasks be split and run in parallel?
 Bash output auto-compressed. Tools: forge_stats, forge_reset_cache. Bypass: docker exec, psql, mysql, ssh.
 </Forge>
 
+<Codex>
+Before delegating exploration to @pathfinder, use codex_search to locate files by purpose or exports. Only use @pathfinder if Codex returns no relevant matches or you need deeper symbol analysis.
+</Codex>
+
 <Echo>
 Compression active. Levels: lite/full/ultra. Commands: /atlas-echo [level], /atlas-verbose. Auto-clarity on critical contexts.
 </Echo>`
@@ -291,6 +295,8 @@ Forge: Bash output compression is active for all shell commands. Outputs are aut
 - Available tools: forge_stats (view compression statistics and cache status), forge_reset_cache (clear redundancy cache)
 - Bypassed commands (not compressed): docker exec, psql, mysql, ssh
 - Compression includes: ANSI stripping, deduplication, file grouping, truncation, summarization
+
+Codex: Use codex_search before delegating to @pathfinder. The repository index at .atlas/index.md contains file descriptions and export lists. Only fall back to @pathfinder for deep symbol analysis or when Codex yields no results.
 
 Echo: Prompt compression system with three levels.
 - lite: removes filler words and hedging

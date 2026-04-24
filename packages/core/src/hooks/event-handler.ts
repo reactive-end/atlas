@@ -4,6 +4,9 @@ import type { EchoLevel, AgentMode, PluginState } from '@/types'
 import { vaultDeleteSession, vaultSaveObservation } from '@/modules/vault/client'
 import { stripPrivateTags } from '@/modules/vault/memory-protocol'
 import { initializeVault, ensureSession, removeSession } from '@/modules/vault/session-manager'
+import { runCodexIndex } from '@/modules/codex/codex'
+import { join } from 'node:path'
+import { existsSync } from 'node:fs'
 
 export function handleEvent(
   ctx: EventContext,
@@ -73,6 +76,19 @@ export function handleRealEvent(
       if (info?.id) {
         initializeVault()
         ensureSession(info.id)
+
+        if (config.codex.enabled && config.codex.autoIndexOnStart) {
+          const repoRoot = process.cwd()
+          const indexPath = join(repoRoot, config.codex.indexPath)
+          if (!existsSync(indexPath)) {
+            const stats = runCodexIndex(repoRoot, config.codex)
+            vaultSaveObservation(
+              info.id,
+              `Codex indexed ${stats.indexed} files (${stats.updated} updated, ${stats.deleted} removed)`,
+              'repo-index',
+            )
+          }
+        }
       }
       break
     }
