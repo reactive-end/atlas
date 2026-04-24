@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, writeFileSync, statSync } from 'node:fs'
+import { existsSync, mkdirSync, writeFileSync, statSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
 import type { IndexedFile } from './types'
 
@@ -52,7 +52,7 @@ export function isIndexStale(
 
     function checkDirModified(dir: string): boolean {
       try {
-        const entries = require('node:fs').readdirSync(dir)
+        const entries = readdirSync(dir)
 
         for (const entry of entries) {
           const fullPath = join(dir, entry)

@@ -5,8 +5,8 @@ import { vaultDeleteSession, vaultSaveObservation } from '@/modules/vault/client
 import { stripPrivateTags } from '@/modules/vault/memory-protocol'
 import { initializeVault, ensureSession, removeSession } from '@/modules/vault/session-manager'
 import { runCodexIndex } from '@/modules/codex/codex'
+import { isIndexStale } from '@/modules/codex/writer'
 import { join } from 'node:path'
-import { existsSync } from 'node:fs'
 
 export function handleEvent(
   ctx: EventContext,
@@ -71,17 +71,19 @@ export function handleRealEvent(
 ): PluginState | void {
   switch (event.type) {
     case 'session.created': {
-      if (!config.vault.enabled) return
       const info = event.properties['info'] as { id: string } | undefined
-      if (info?.id) {
+
+      if (config.vault.enabled && info?.id) {
         initializeVault()
         ensureSession(info.id)
+      }
 
-        if (config.codex.enabled && config.codex.autoIndexOnStart) {
-          const repoRoot = process.cwd()
-          const indexPath = join(repoRoot, config.codex.indexPath)
-          if (!existsSync(indexPath)) {
-            const stats = runCodexIndex(repoRoot, config.codex)
+      if (config.codex.enabled && config.codex.autoIndexOnStart) {
+        const repoRoot = process.cwd()
+        const indexPath = join(repoRoot, config.codex.indexPath)
+        if (isIndexStale(repoRoot, indexPath, config.codex.includePatterns, config.codex.excludePatterns)) {
+          const stats = runCodexIndex(repoRoot, config.codex)
+          if (config.vault.enabled && info?.id) {
             vaultSaveObservation(
               info.id,
               `Codex indexed ${stats.indexed} files (${stats.updated} updated, ${stats.deleted} removed)`,
