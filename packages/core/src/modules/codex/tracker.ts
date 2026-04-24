@@ -90,8 +90,8 @@ export function parseIndexMarkdown(content: string): RepoIndex {
 
 export function calculateDeltas(
   diskFiles: string[],
-  existingFiles: Map<string, string>,
-  _repoRoot: string,
+  existingIndex: RepoIndex | null,
+  repoRoot: string,
 ): FileDelta {
   const delta: FileDelta = {
     added: [],
@@ -100,13 +100,24 @@ export function calculateDeltas(
     unchanged: [],
   }
 
-  const existingPaths = new Set(existingFiles.keys())
+  const existingPaths = new Set(existingIndex ? existingIndex.files.map(f => f.path) : [])
+  const lastIndexedTime = existingIndex ? new Date(existingIndex.lastIndexedAt).getTime() : 0
 
   for (const filePath of diskFiles) {
     if (!existingPaths.has(filePath)) {
       delta.added.push(filePath)
     } else {
-      delta.unchanged.push(filePath)
+      try {
+        const fullPath = join(repoRoot, filePath)
+        const stats = statSync(fullPath)
+        if (stats.mtimeMs > lastIndexedTime) {
+          delta.modified.push(filePath)
+        } else {
+          delta.unchanged.push(filePath)
+        }
+      } catch {
+        delta.unchanged.push(filePath)
+      }
     }
   }
 
@@ -128,13 +139,18 @@ export function scanFiles(
 
   const matchesPattern = (path: string, patterns: string[]): boolean => {
     for (const pattern of patterns) {
-      const globPattern = pattern
-        .replace(/\./g, '\\.')
-        .replace(/\*\*/g, '.*')
-        .replace(/\*/g, '[^/\\]*')
-        .replace(/\?/g, '.')
+      const regexPattern = pattern
+        .replace(/[+.^${}()|[\]\\]/g, '\\$&')
+        .replace(/\*\*\//g, '{{GLOBSTAR_SLASH}}')
+        .replace(/\*\*/g, '{{GLOBSTAR}}')
+        .replace(/\*/g, '{{STAR}}')
+        .replace(/\?/g, '{{QMARK}}')
+        .replace(/{{GLOBSTAR_SLASH}}/g, '(?:.*/)?')
+        .replace(/{{GLOBSTAR}}/g, '.*')
+        .replace(/{{STAR}}/g, '[^/]*')
+        .replace(/{{QMARK}}/g, '.')
 
-      const regex = new RegExp(`^${globPattern}$`, 'i')
+      const regex = new RegExp(`^${regexPattern}$`, 'i')
       if (regex.test(path)) {
         return true
       }
@@ -167,7 +183,8 @@ export function scanFiles(
           const stats = statSync(fullPath)
 
           if (stats.isDirectory()) {
-            if (!shouldExclude(relativePath)) {
+            const isExcluded = shouldExclude(relativePath) || shouldExclude(relativePath + '/')
+            if (!isExcluded) {
               walkDirectory(fullPath)
             }
           } else if (stats.isFile()) {

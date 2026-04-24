@@ -11,24 +11,21 @@ export function runCodexIndex(repoRoot: string, config: CodexConfig): IndexStats
 
   const existingIndex = readExistingIndex(indexPath)
 
-  const existingFilesMap = new Map<string, string>()
-  if (existingIndex) {
-    for (const file of existingIndex.files) {
-      existingFilesMap.set(file.path, file.description)
-    }
-  }
-
-  const delta = calculateDeltas(diskFiles, existingFilesMap, repoRoot)
+  const delta = calculateDeltas(diskFiles, existingIndex, repoRoot)
 
   const newFiles: IndexedFile[] = []
 
   for (const filePath of delta.added) {
-    const analyzed = analyzeFile(filePath, config.maxFileSize)
+    const absolutePath = join(repoRoot, filePath)
+    const analyzed = analyzeFile(absolutePath, config.maxFileSize)
+    analyzed.path = filePath
     newFiles.push(analyzed)
   }
 
   for (const filePath of delta.modified) {
-    const analyzed = analyzeFile(filePath, config.maxFileSize)
+    const absolutePath = join(repoRoot, filePath)
+    const analyzed = analyzeFile(absolutePath, config.maxFileSize)
+    analyzed.path = filePath
     newFiles.push(analyzed)
   }
 

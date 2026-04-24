@@ -174,14 +174,14 @@ export const DEFAULT_CONFIG: AtlasConfig = {
   codex: {
     enabled: true,
     indexPath: '.atlas/index.md',
-    includePatterns: ['src/**/*.{ts,tsx,js,jsx}', 'lib/**/*.ts'],
+    includePatterns: ['**/src/**/*.{ts,tsx,js,jsx}', '**/lib/**/*.ts'],
     excludePatterns: [
-      'node_modules/**',
+      '**/node_modules/**',
       '**/dist/**',
       '**/*.test.ts',
       '**/*.spec.ts',
       '**/*.d.ts',
-      '.atlas/**',
+      '**/.atlas/**',
     ],
     maxFileSize: 50000,
     autoIndexOnStart: true,

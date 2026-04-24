@@ -1,7 +1,11 @@
-import { describe, it, expect } from 'vitest'
-import { parseIndexMarkdown, calculateDeltas } from './tracker'
+import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { parseIndexMarkdown, calculateDeltas, scanFiles } from './tracker'
 import { analyzeFile } from './analyzer'
 import { handleCodexSearch } from './tool-handlers'
+import * as fs from 'node:fs'
+import { join } from 'node:path'
+import { tmpdir } from 'node:os'
+import type { RepoIndex } from './types'
 
 describe('Codex Module', () => {
   describe('parseIndexMarkdown', () => {
@@ -48,26 +52,123 @@ Utility functions.
   })
 
   describe('calculateDeltas', () => {
-    it('detects added files', () => {
-      const diskFiles = ['src/a.ts', 'src/b.ts']
-      const existingFiles = new Map<string, string>([['src/a.ts', 'desc']])
+    let tmpDir: string
 
-      const delta = calculateDeltas(diskFiles, existingFiles, '/test')
+    beforeEach(() => {
+      tmpDir = join(tmpdir(), `codex-delta-test-${Date.now()}`)
+      fs.mkdirSync(join(tmpDir, 'src'), { recursive: true })
+    })
+
+    afterEach(() => {
+      fs.rmSync(tmpDir, { recursive: true, force: true })
+    })
+
+    it('detects added files', () => {
+      fs.writeFileSync(join(tmpDir, 'src', 'a.ts'), 'export const a = 1')
+      fs.writeFileSync(join(tmpDir, 'src', 'b.ts'), 'export const b = 2')
+
+      // Force a.ts mtime to the past so it appears unchanged
+      const pastDate = new Date('2020-01-01')
+      fs.utimesSync(join(tmpDir, 'src', 'a.ts'), pastDate, pastDate)
+
+      const diskFiles = ['src/a.ts', 'src/b.ts']
+      const existingIndex: RepoIndex = {
+        version: 1,
+        repositoryRoot: tmpDir,
+        lastIndexedAt: new Date().toISOString(),
+        fileCount: 1,
+        files: [{ path: 'src/a.ts', exports: [], description: 'desc' }],
+      }
+
+      const delta = calculateDeltas(diskFiles, existingIndex, tmpDir)
 
       expect(delta.added).toContain('src/b.ts')
       expect(delta.unchanged).toContain('src/a.ts')
     })
 
     it('detects deleted files', () => {
-      const diskFiles = ['src/a.ts']
-      const existingFiles = new Map<string, string>([
-        ['src/a.ts', 'desc'],
-        ['src/deleted.ts', 'desc'],
-      ])
+      fs.writeFileSync(join(tmpDir, 'src', 'a.ts'), 'export const a = 1')
 
-      const delta = calculateDeltas(diskFiles, existingFiles, '/test')
+      const diskFiles = ['src/a.ts']
+      const existingIndex: RepoIndex = {
+        version: 1,
+        repositoryRoot: tmpDir,
+        lastIndexedAt: new Date().toISOString(),
+        fileCount: 2,
+        files: [
+          { path: 'src/a.ts', exports: [], description: 'desc' },
+          { path: 'src/deleted.ts', exports: [], description: 'desc' },
+        ],
+      }
+
+      const delta = calculateDeltas(diskFiles, existingIndex, tmpDir)
 
       expect(delta.deleted).toContain('src/deleted.ts')
+    })
+
+    it('detects modified files when mtime is newer than last index', () => {
+      fs.writeFileSync(join(tmpDir, 'src', 'a.ts'), 'export const a = 1')
+
+      const diskFiles = ['src/a.ts']
+      const existingIndex: RepoIndex = {
+        version: 1,
+        repositoryRoot: tmpDir,
+        lastIndexedAt: '2024-01-01T00:00:00.000Z',
+        fileCount: 1,
+        files: [{ path: 'src/a.ts', exports: [], description: 'Old desc' }],
+      }
+
+      const delta = calculateDeltas(diskFiles, existingIndex, tmpDir)
+
+      expect(delta.modified).toContain('src/a.ts')
+      expect(delta.unchanged).toHaveLength(0)
+    })
+
+    it('keeps unchanged files when mtime is older than last index', () => {
+      fs.writeFileSync(join(tmpDir, 'src', 'a.ts'), 'export const a = 1')
+
+      const diskFiles = ['src/a.ts']
+      const existingIndex: RepoIndex = {
+        version: 1,
+        repositoryRoot: tmpDir,
+        lastIndexedAt: '2099-01-01T00:00:00.000Z',
+        fileCount: 1,
+        files: [{ path: 'src/a.ts', exports: [], description: 'Desc' }],
+      }
+
+      const delta = calculateDeltas(diskFiles, existingIndex, tmpDir)
+
+      expect(delta.unchanged).toContain('src/a.ts')
+      expect(delta.modified).toHaveLength(0)
+    })
+  })
+
+  describe('scanFiles', () => {
+    let tmpDir: string
+
+    beforeEach(() => {
+      tmpDir = join(tmpdir(), `codex-scan-test-${Date.now()}`)
+      fs.mkdirSync(join(tmpDir, 'packages', 'core', 'src'), { recursive: true })
+      fs.mkdirSync(join(tmpDir, 'packages', 'core', 'node_modules', 'lib'), { recursive: true })
+      fs.writeFileSync(join(tmpDir, 'packages', 'core', 'src', 'index.ts'), 'export const a = 1')
+      fs.writeFileSync(join(tmpDir, 'packages', 'core', 'node_modules', 'lib', 'foo.ts'), 'export const b = 2')
+    })
+
+    afterEach(() => {
+      fs.rmSync(tmpDir, { recursive: true, force: true })
+    })
+
+    it('discovers files matching include patterns', () => {
+      const files = scanFiles(tmpDir, ['**/src/**/*.ts'], [])
+
+      expect(files).toContain('packages/core/src/index.ts')
+    })
+
+    it('excludes nested node_modules directories', () => {
+      const files = scanFiles(tmpDir, ['**/*.ts'], ['**/node_modules/**'])
+
+      expect(files).toContain('packages/core/src/index.ts')
+      expect(files).not.toContain('packages/core/node_modules/lib/foo.ts')
     })
   })
 
