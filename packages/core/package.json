@@ -1,6 +1,6 @@
 {
   "name": "@atlas-opencode/core",
-  "version": "1.0.7",
+  "version": "1.0.8",
   "description": "Token optimization plugin for OpenCode CLI",
   "type": "module",
   "main": "dist/index.js",

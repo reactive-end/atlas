@@ -1,4 +1,5 @@
 import { vaultSearch, vaultTimeline, vaultGetObservation, vaultSaveObservation } from '@/modules/vault/client'
+import { ensureSession } from '@/modules/vault/session-manager'
 import { stripPrivateTags } from '@/modules/vault/memory-protocol'
 
 export interface MemToolResult {
@@ -77,6 +78,10 @@ export function handleMemSave(
   category: string,
   stripPrivate: boolean,
 ): MemToolResult {
+  if (!ensureSession(sessionId)) {
+    return { content: 'mem_save error: Failed to ensure session exists', isError: true }
+  }
+
   const sanitized = stripPrivate ? stripPrivateTags(content) : content
 
   const result = vaultSaveObservation(sessionId, sanitized, category)
