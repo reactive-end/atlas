@@ -1,6 +1,6 @@
 import type { ToolAfterContext } from '@/types'
 import type { AtlasConfig } from '@/config/schema'
-import { shouldCompressResult, compressBashResult } from '@/modules/forge/bash-wrapper'
+import { compressToolResult as compressToolOutput } from '@/modules/forge/bash-wrapper'
 import { vaultSaveObservation } from '@/modules/vault/client'
 import { stripPrivateTags } from '@/modules/vault/memory-protocol'
 import { ensureSession } from '@/modules/vault/session-manager'
@@ -27,13 +27,8 @@ export function compressToolResult(
     return ctx.result
   }
 
-  const args = ctx.args as Record<string, string>
-  if (shouldCompressResult(ctx.tool, args, config.forge)) {
-    const result = compressBashResult(ctx.result, config.forge)
-    return result.output
-  }
-
-  return ctx.result
+  const result = compressToolOutput(ctx.tool, ctx.result, config.forge)
+  return result.output
 }
 
 export function handleToolAfter(
@@ -67,15 +62,15 @@ export function handleRealToolAfter(
   toolName: string,
   sessionId: string,
   outputText: string,
-  args: Record<string, string>,
+  _args: Record<string, string>,
   config: AtlasConfig,
 ): { compressed: string; vaultSaved: boolean; ratio: number } {
   let compressed = outputText
   let vaultSaved = false
   let ratio = 0
 
-  if (config.forge.enabled && shouldCompressResult(toolName, args, config.forge)) {
-    const result = compressBashResult(outputText, config.forge)
+  if (config.forge.enabled) {
+    const result = compressToolOutput(toolName, outputText, config.forge)
     compressed = result.output
     ratio = result.ratio
   }

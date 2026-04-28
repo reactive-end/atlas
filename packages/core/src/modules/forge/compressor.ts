@@ -2,6 +2,8 @@ import type { ForgeConfig } from '@/config/schema'
 import { smartFilter } from '@/modules/forge/filters'
 import { deduplicateLines } from '@/modules/forge/dedup'
 import { RedundancyCache } from '@/modules/forge/redundancy'
+import { compressMarkdown } from '@/modules/forge/markdown'
+import { compressErrors } from '@/modules/forge/error-compressor'
 
 export interface CompressionResult {
   output: string
@@ -128,6 +130,13 @@ export function compressBashOutput(
 
   const dedupResult = deduplicateLines(output, config.dedupMin)
   output = dedupResult.text
+
+  if (config.compressMarkdown) {
+    output = compressMarkdown(output)
+  }
+
+  // Compress repetitive errors (TS/ESLint) before truncation
+  output = compressErrors(output)
 
   output = groupFilesByDirectory(output)
 

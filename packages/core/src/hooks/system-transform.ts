@@ -1,10 +1,10 @@
-import type { SystemTransformContext, PluginState, AgentName } from '@/types'
+import type { SystemTransformContext, PluginState, AgentName, EchoLevel } from '@/types'
 import type { AtlasConfig, AgentPresetsMap } from '@/config/schema'
 import { buildEchoPrompt, buildDisabledPrompt } from '@/modules/echo/prompt-builder'
 import { shouldDisableEcho } from '@/modules/echo/auto-clarity'
 import { buildFullVaultPrompt } from '@/modules/vault/memory-protocol'
 import { AGENT_FACTORIES, ALL_AGENT_NAMES } from '@/modules/agents/registry'
-import { buildCodexPrompt } from '@/modules/codex/prompt'
+import { buildCodexPrompt, buildCodexContextPrompt } from '@/modules/codex/prompt'
 
 function getActivePresets(config: AtlasConfig): AgentPresetsMap {
   return config.agents.presets[config.agents.preset]
@@ -18,6 +18,7 @@ function buildEchoSection(
   config: AtlasConfig,
   state: PluginState,
   content: string,
+  contextUsagePercent: number = 0,
 ): string {
   if (!config.echo.enabled) {
     return ''
@@ -31,7 +32,33 @@ function buildEchoSection(
     return buildDisabledPrompt()
   }
 
-  return buildEchoPrompt(state.echoLevel)
+  // Adaptive intensity: escalate echo level based on context usage
+  const adaptiveLevel = getAdaptiveLevel(state.echoLevel, contextUsagePercent, config)
+  return buildEchoPrompt(adaptiveLevel)
+}
+
+function getAdaptiveLevel(
+  baseLevel: EchoLevel,
+  contextUsagePercent: number,
+  config: AtlasConfig,
+): EchoLevel {
+  if (!config.forge.adaptiveIntensity) {
+    return baseLevel
+  }
+
+  // Escalate compression as context fills up
+  if (contextUsagePercent > 80) {
+    return 'ultra'
+  }
+  if (contextUsagePercent > 60) {
+    return 'ultra'
+  }
+  if (contextUsagePercent > 30) {
+    // At least 'full' when context is getting substantial
+    return baseLevel === 'lite' ? 'full' : baseLevel
+  }
+
+  return baseLevel
 }
 
 function buildVaultSection(config: AtlasConfig): string {
@@ -64,7 +91,12 @@ function buildCodexSection(config: AtlasConfig): string {
     return ''
   }
 
-  return buildCodexPrompt()
+  try {
+    const repoRoot = process.cwd()
+    return buildCodexContextPrompt(repoRoot, config.codex)
+  } catch {
+    return buildCodexPrompt()
+  }
 }
 
 export function handleSystemTransform(

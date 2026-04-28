@@ -18,6 +18,7 @@ import { createMagistrateAgent } from '@/modules/agents/magistrate'
 import { createEnvoyAgent } from '@/modules/agents/envoy'
 import { createQuartermasterAgent } from '@/modules/agents/quartermaster'
 import { createTacticianAgent } from '@/modules/agents/tactician'
+import { createSquireAgent } from '@/modules/agents/squire'
 
 const TEST_PRESET: AgentPresetConfig = {
   model: 'openai/gpt-5.4',
@@ -44,6 +45,7 @@ const AGENT_FACTORIES = [
   { name: 'envoy', factory: createEnvoyAgent, displayContains: 'Envoy' },
   { name: 'quartermaster', factory: createQuartermasterAgent, displayContains: 'Quartermaster' },
   { name: 'tactician', factory: createTacticianAgent, displayContains: 'Tactician' },
+  { name: 'squire', factory: createSquireAgent, displayContains: 'Squire' },
 ]
 
 describe('Agent Definitions', () => {
@@ -313,6 +315,18 @@ describe('Agent Definitions', () => {
       expect(agent.systemPrompt).toContain('unit')
       expect(agent.systemPrompt).toContain('integration')
       expect(agent.systemPrompt).toContain('e2e')
+    })
+  })
+
+  describe('squire specialization', () => {
+    it('echo prompt enforces max 2 tool calls', () => {
+      const agent = createSquireAgent(TEST_PRESET, true)
+      expect(agent.systemPrompt).toContain('2 tool calls')
+    })
+
+    it('verbose prompt enforces read-only constraint', () => {
+      const agent = createSquireAgent(TEST_PRESET, false)
+      expect(agent.systemPrompt).toContain('read-only')
     })
   })
 })

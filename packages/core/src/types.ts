@@ -24,6 +24,7 @@ export type AgentName =
   | 'envoy'
   | 'quartermaster'
   | 'tactician'
+  | 'squire'
 
 export type PresetName = 'default' | 'performance' | 'economy' | 'premium'
 

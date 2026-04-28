@@ -1,5 +1,5 @@
 // Atlas Plugin for OpenCode
-// Registers 18 agents (Atlas orchestrator + 17 specialists) via config hook
+// Registers 19 agents (Atlas orchestrator + 18 specialists) via config hook
 // Place in ~/.config/opencode/plugins/ or .opencode/plugins/
 
 import { type Plugin, type PluginInput, type PluginOptions, tool } from '@opencode-ai/plugin'
@@ -28,6 +28,10 @@ import {
   initializeVault,
   getForgeStats,
   resetRedundancyCache,
+  compressDifferential,
+  clearDiffCache,
+  compressReadResult,
+  clearReadCache,
 } from '@atlas-opencode/core'
 
 type AtlasPluginState = {
@@ -175,11 +179,38 @@ const atlasPlugin: Plugin = async (input: PluginInput, _options?: PluginOptions)
           config,
         )
 
-        if (compressed !== toolOutput.output) {
+        let finalOutput = compressed
+
+        // Apply differential compression for bash commands
+        if (config.forge.enabled && compressed !== toolOutput.output) {
+          const command = args['command'] ?? args['cmd'] ?? ''
+          if (command) {
+            const diffResult = compressDifferential(command, compressed)
+            if (diffResult.wasDiff) {
+              finalOutput = diffResult.result
+            }
+          }
+        }
+
+        // Apply read cache for file reads
+        if (config.forge.enabled) {
+          const toolLower = toolInput.tool.toLowerCase()
+          if (toolLower.includes('read') || toolLower.includes('cat')) {
+            const filePath = args['path'] ?? args['file'] ?? args['file_path'] ?? ''
+            if (filePath) {
+              const readResult = compressReadResult(filePath, finalOutput)
+              if (readResult.wasCached) {
+                finalOutput = readResult.result
+              }
+            }
+          }
+        }
+
+        if (finalOutput !== toolOutput.output) {
           if (config.forge.showCompressionRatio && ratio > 0) {
-            toolOutput.output = `[Forge: -${Math.round(ratio * 100)}%]\n${compressed}`
+            toolOutput.output = `[Forge: -${Math.round(ratio * 100)}%]\n${finalOutput}`
           } else {
-            toolOutput.output = compressed
+            toolOutput.output = finalOutput
           }
           sessionState.stats.forgeCompressed++
         }
@@ -432,7 +463,9 @@ const atlasPlugin: Plugin = async (input: PluginInput, _options?: PluginOptions)
             args: {},
             async execute() {
               resetRedundancyCache()
-              return 'Forge redundancy cache cleared'
+              clearDiffCache()
+              clearReadCache()
+              return 'All Forge caches cleared (redundancy, diff, read)'
             },
           }),
         } : {}),

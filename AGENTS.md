@@ -9,7 +9,7 @@ This file provides context to coding agents (Cursor, Windsurf, Copilot, etc.) to
 Atlas is a plugin for OpenCode CLI that optimizes token consumption in interactions with LLMs through four coordinated modules:
 
 - **Echo** — Model output compression (3 levels: lite, full, ultra)
-- **Agents** — 18 specialized agents with dual echo/verbose prompts
+- **Agents** — 19 specialized agents with dual echo/verbose prompts
 - **Forge** — Compression pipeline for bash command output
 - **Vault** — Persistent memory between sessions via embedded SQLite
 
@@ -49,7 +49,8 @@ packages/core/
 │   │   │   ├── magistrate.ts             # @reviewer — code review and PR diff analysis
 │   │   │   ├── envoy.ts                  # @contracts — REST/GraphQL/gRPC API design
 │   │   │   ├── quartermaster.ts          # @deps — dependency management and upgrades
-│   │   │   └── tactician.ts              # @tester — test strategy and coverage architecture
+│   │   │   ├── tactician.ts              # @tester — test strategy and coverage architecture
+│   │   │   └── squire.ts                 # @runner — quick verification and simple checks
 │   │   ├── forge/
 │   │   │   ├── filters.ts                # ANSI, timestamps, progress bar cleanup
 │   │   │   ├── dedup.ts                  # Deduplication of repeated lines
@@ -99,7 +100,7 @@ packages/core/
 2. `system.transform` fires → pushes Echo compression section + Vault memory protocol
 3. The agent sees: its own focused system prompt + Echo rules + full Vault protocol
 
-All 18 agents automatically receive the Vault memory protocol and know to use `mem_search` before acting and `mem_save` for key findings.
+All 19 agents automatically receive the Vault memory protocol and know to use `mem_search` before acting and `mem_save` for key findings.
 
 ### Agent Factory Pattern
 
@@ -150,6 +151,7 @@ export function createNameAgent(
 | `sentinel` | `@guard` | Quality | Security audit, OWASP |
 | `magistrate` | `@reviewer` | Quality | Code review, PR diffs |
 | `tactician` | `@tester` | Quality | Test strategy, coverage |
+| `squire` | `@runner` | Economy | Quick verifications, simple checks |
 | `alchemist` | `@optimizer` | Quality | Performance profiling |
 | `herald` | `@deployer` | Infrastructure | CI/CD, Dockerfiles |
 | `lorekeeper` | `@analyst` | Infrastructure | Schema, migrations, queries |
@@ -177,6 +179,14 @@ export function createNameAgent(
 - 4 presets: `default`, `performance`, `economy`, `premium`
 - Adding a new agent requires updating: `types.ts`, `schema.ts` (all 4 presets), `registry.ts`, `index.ts`
 
+## New Forge Modules (v1.1.0+)
+
+| Module | Purpose |
+|--------|----------|
+| `error-compressor.ts` | Groups repetitive TS/ESLint errors into compact summaries |
+| `diff-cache.ts` | Caches command outputs, returns only diffs on repeat runs |
+| `read-cache.ts` | Caches file reads, returns summaries for unchanged re-reads |
+
 ## Tests
 
 ```bash
@@ -187,7 +197,7 @@ npm run typecheck     # Check types
 npm run check         # typecheck + tests (CI)
 ```
 
-16 test files, 320 tests covering:
+21 test files, 387+ tests covering:
 - Echo levels and prompt builder
 - Auto-clarity (critical context detection)
 - TUI commands

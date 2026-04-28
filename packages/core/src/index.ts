@@ -24,8 +24,11 @@ export { handleToolBefore, handleRealToolBefore } from '@/hooks/tool-before'
 export { handleToolAfter, handleRealToolAfter, compressToolResult } from '@/hooks/tool-after'
 
 // Forge compression
-export { shouldCompressResult, compressBashResult } from '@/modules/forge/bash-wrapper'
+export { shouldCompressResult, compressBashResult, compressToolResult as compressForgeToolResult } from '@/modules/forge/bash-wrapper'
 export { getForgeStats, resetRedundancyCache } from '@/modules/forge/compressor'
+export { compressErrors } from '@/modules/forge/error-compressor'
+export { compressDifferential, clearDiffCache, getDiffCacheSize } from '@/modules/forge/diff-cache'
+export { compressReadResult, clearReadCache, getReadCacheSize } from '@/modules/forge/read-cache'
 
 // Compacting hooks (vault)
 export { handleCompacting, buildCompactionContext } from '@/hooks/compacting'
@@ -59,7 +62,7 @@ export type { MemToolResult } from '@/modules/vault/tool-handlers'
 // Codex
 export { runCodexIndex } from '@/modules/codex/codex'
 export { handleCodexSearch, handleCodexReindex } from '@/modules/codex/tool-handlers'
-export { buildCodexPrompt } from '@/modules/codex/prompt'
+export { buildCodexPrompt, buildCodexContextPrompt } from '@/modules/codex/prompt'
 export { initializeCodex } from '@/modules/codex/initializer'
 export type { CodexConfig } from '@/modules/codex/types'
 
@@ -82,6 +85,7 @@ export { createMagistrateAgent } from '@/modules/agents/magistrate'
 export { createEnvoyAgent } from '@/modules/agents/envoy'
 export { createQuartermasterAgent } from '@/modules/agents/quartermaster'
 export { createTacticianAgent } from '@/modules/agents/tactician'
+export { createSquireAgent } from '@/modules/agents/squire'
 
 // Agent registry (for OpenCode UI registration)
 export { buildAgentRegistry, getAgentConfigs, AGENT_ALIASES } from '@/modules/agents/registry'

@@ -82,6 +82,7 @@ export const DEFAULT_CONFIG: AtlasConfig = {
         envoy: { model: 'openai/gpt-5.4', skills: ['*'], mcps: [] },
         quartermaster: { model: 'openai/gpt-5.4-mini', skills: ['*'], mcps: [] },
         tactician: { model: 'openai/gpt-5.4', skills: ['*'], mcps: [] },
+        squire: { model: 'openai/gpt-5.4-mini', skills: ['*'], mcps: [] },
       },
       performance: {
         atlas: { model: 'openai/gpt-5.4', skills: ['*'], mcps: [] },
@@ -102,6 +103,7 @@ export const DEFAULT_CONFIG: AtlasConfig = {
         envoy: { model: 'openai/gpt-5.4', skills: ['*'], mcps: [] },
         quartermaster: { model: 'openai/gpt-5.4', skills: ['*'], mcps: [] },
         tactician: { model: 'openai/gpt-5.4', skills: ['*'], mcps: [] },
+        squire: { model: 'openai/gpt-5.4-mini', skills: ['*'], mcps: [] },
       },
       economy: {
         atlas: { model: 'openai/gpt-5.4-mini', skills: ['*'], mcps: [] },
@@ -122,6 +124,7 @@ export const DEFAULT_CONFIG: AtlasConfig = {
         envoy: { model: 'openai/gpt-5.4-mini', skills: ['*'], mcps: [] },
         quartermaster: { model: 'openai/gpt-5.4-mini', skills: ['*'], mcps: [] },
         tactician: { model: 'openai/gpt-5.4-mini', skills: ['*'], mcps: [] },
+        squire: { model: 'openai/gpt-5.4-mini', skills: ['*'], mcps: [] },
       },
       premium: {
         atlas: { model: 'anthropic/claude-opus-4.6', skills: ['*'], mcps: [] },
@@ -142,6 +145,7 @@ export const DEFAULT_CONFIG: AtlasConfig = {
         envoy: { model: 'anthropic/claude-opus-4.6', skills: ['*'], mcps: [] },
         quartermaster: { model: 'anthropic/claude-opus-4.6', skills: ['*'], mcps: [] },
         tactician: { model: 'anthropic/claude-opus-4.6', skills: ['*'], mcps: [] },
+        squire: { model: 'openai/gpt-5.4-mini', skills: ['*'], mcps: [] },
       },
     },
   },
@@ -153,7 +157,7 @@ export const DEFAULT_CONFIG: AtlasConfig = {
     summarizeThresholdLines: 500,
     compactThresholdTokens: 120000,
     bypass: ['docker exec', 'psql', 'mysql', 'ssh'],
-    compressMarkdown: false,
+    compressMarkdown: true,
     redundancyCacheEnabled: true,
     redundancyCacheSize: 16,
     showCompressionRatio: false,

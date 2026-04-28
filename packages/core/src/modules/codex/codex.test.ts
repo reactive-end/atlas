@@ -151,6 +151,8 @@ Utility functions.
       fs.mkdirSync(join(tmpDir, 'packages', 'core', 'src'), { recursive: true })
       fs.mkdirSync(join(tmpDir, 'packages', 'core', 'node_modules', 'lib'), { recursive: true })
       fs.writeFileSync(join(tmpDir, 'packages', 'core', 'src', 'index.ts'), 'export const a = 1')
+      fs.writeFileSync(join(tmpDir, 'packages', 'core', 'src', 'app.tsx'), 'export const App = () => {}')
+      fs.writeFileSync(join(tmpDir, 'packages', 'core', 'src', 'style.css'), '.a { color: red }')
       fs.writeFileSync(join(tmpDir, 'packages', 'core', 'node_modules', 'lib', 'foo.ts'), 'export const b = 2')
     })
 
@@ -169,6 +171,42 @@ Utility functions.
 
       expect(files).toContain('packages/core/src/index.ts')
       expect(files).not.toContain('packages/core/node_modules/lib/foo.ts')
+    })
+
+    it('matches brace expansion patterns like *.{ts,tsx}', () => {
+      const files = scanFiles(tmpDir, ['**/src/**/*.{ts,tsx}'], [])
+
+      expect(files).toContain('packages/core/src/index.ts')
+      expect(files).toContain('packages/core/src/app.tsx')
+      expect(files).not.toContain('packages/core/src/style.css')
+    })
+
+    it('matches multi-extension brace patterns like *.{ts,tsx,js,jsx}', () => {
+      fs.writeFileSync(join(tmpDir, 'packages', 'core', 'src', 'util.js'), 'export const c = 3')
+      fs.writeFileSync(join(tmpDir, 'packages', 'core', 'src', 'comp.jsx'), 'export const D = () => {}')
+
+      const files = scanFiles(
+        tmpDir,
+        ['**/src/**/*.{ts,tsx,js,jsx}'],
+        [],
+      )
+
+      expect(files).toContain('packages/core/src/index.ts')
+      expect(files).toContain('packages/core/src/app.tsx')
+      expect(files).toContain('packages/core/src/util.js')
+      expect(files).toContain('packages/core/src/comp.jsx')
+      expect(files).not.toContain('packages/core/src/style.css')
+    })
+
+    it('handles exclude patterns with brace expansions', () => {
+      const files = scanFiles(
+        tmpDir,
+        ['**/src/**/*.{ts,tsx}'],
+        ['**/*.{test,spec}.ts'],
+      )
+
+      expect(files).toContain('packages/core/src/index.ts')
+      expect(files).toContain('packages/core/src/app.tsx')
     })
   })
 

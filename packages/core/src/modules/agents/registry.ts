@@ -19,6 +19,7 @@ import { createMagistrateAgent } from '@/modules/agents/magistrate'
 import { createEnvoyAgent } from '@/modules/agents/envoy'
 import { createQuartermasterAgent } from '@/modules/agents/quartermaster'
 import { createTacticianAgent } from '@/modules/agents/tactician'
+import { createSquireAgent } from '@/modules/agents/squire'
 
 export type AgentSdkConfig = {
   model?: string
@@ -59,6 +60,7 @@ export const AGENT_FACTORIES = {
   envoy: createEnvoyAgent,
   quartermaster: createQuartermasterAgent,
   tactician: createTacticianAgent,
+  squire: createSquireAgent,
 } as const
 
 export const ALL_AGENT_NAMES: AgentName[] = [
@@ -80,6 +82,7 @@ export const ALL_AGENT_NAMES: AgentName[] = [
   'envoy',
   'quartermaster',
   'tactician',
+  'squire',
 ]
 
 export const AGENT_ALIASES: Record<AgentName, string> = {
@@ -101,6 +104,7 @@ export const AGENT_ALIASES: Record<AgentName, string> = {
   envoy: '@contracts',
   quartermaster: '@deps',
   tactician: '@tester',
+  squire: '@runner',
 }
 
 export function buildAgentRegistry(

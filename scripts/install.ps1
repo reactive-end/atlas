@@ -1,5 +1,7 @@
-# Atlas Plugin Installer for Windows (PowerShell)
-# Fully automated: dirs, files, dependencies, config
+# ╔══════════════════════════════════════════════════════════════╗
+# ║                    Atlas Plugin Installer                    ║
+# ║          Token optimization plugin for OpenCode CLI          ║
+# ╚══════════════════════════════════════════════════════════════╝
 # Usage: .\install.ps1 [-Force] [-Global]
 
 param(
@@ -11,24 +13,44 @@ $ErrorActionPreference = "Stop"
 
 try {
 
+# ── Colors & Symbols ─────────────────────────────────────────────
 $ESC    = [char]27
+$BOLD   = "$ESC[1m"
+$DIM    = "$ESC[2m"
 $GREEN  = "$ESC[32m"
 $YELLOW = "$ESC[33m"
 $RED    = "$ESC[31m"
 $CYAN   = "$ESC[36m"
+$BLUE   = "$ESC[34m"
+$MAGENTA = "$ESC[35m"
 $NC     = "$ESC[0m"
 
-function Log-Info($msg)  { Write-Host "[i] $msg" }
-function Log-Ok($msg)    { Write-Host "${GREEN}[✓]${NC} $msg" }
-function Log-Warn($msg)  { Write-Host "${YELLOW}[!]${NC} $msg" }
-function Log-Err($msg)   { Write-Host "${RED}[✗]${NC} $msg" }
-function Log-Step($msg)  { Write-Host "${CYAN}>>>${NC} $msg" }
+$CHECK   = [char]0x2713
+$CROSS   = [char]0x2717
+$WARN    = [char]0x26A0
+$ARROW   = [char]0x25B8
+$BOLT    = [char]0x26A1
+$GEAR    = [char]0x2699
+$SPARKLE = [char]0x2728
+
+function Log-Info($msg)  { Write-Host "  ${DIM}${msg}${NC}" }
+function Log-Ok($msg)    { Write-Host "  ${GREEN}${CHECK}${NC} ${msg}" }
+function Log-Warn($msg)  { Write-Host "  ${YELLOW}${WARN}${NC} ${msg}" }
+function Log-Err($msg)   { Write-Host "  ${RED}${CROSS}${NC} ${msg}" }
+function Log-Step($msg)  { Write-Host "`n  ${CYAN}${ARROW}${NC} ${BOLD}${msg}${NC}" }
 
 $GITHUB_RAW = "https://raw.githubusercontent.com/reactive-end/atlas/main"
+$ATLAS_VERSION = "1.1.0"
 
+# ── Banner ───────────────────────────────────────────────────────
 Write-Host ""
-Log-Info "Atlas Plugin Installer"
-Log-Info "======================"
+Write-Host "  ${CYAN}+======================================================+${NC}"
+Write-Host "  ${CYAN}|${NC}                                                      ${CYAN}|${NC}"
+Write-Host "  ${CYAN}|${NC}   ${BOLD}${MAGENTA}${BOLT} Atlas${NC}${BOLD} - Token Optimization for OpenCode${NC}        ${CYAN}|${NC}"
+Write-Host "  ${CYAN}|${NC}                                                      ${CYAN}|${NC}"
+Write-Host "  ${CYAN}|${NC}   ${DIM}v${ATLAS_VERSION} - 19 agents - Echo + Forge + Vault${NC}       ${CYAN}|${NC}"
+Write-Host "  ${CYAN}|${NC}                                                      ${CYAN}|${NC}"
+Write-Host "  ${CYAN}+======================================================+${NC}"
 Write-Host ""
 
 # ── Step 1: Detect config directory ──────────────────────────────
@@ -49,13 +71,13 @@ $entryPath = Join-Path $pluginsDir "atlas.ts"
 $configPath = Join-Path $opencodeDir "atlas.config.json"
 $packageJsonPath = Join-Path $opencodeDir "package.json"
 
-Log-Info "  Config dir: $opencodeDir"
+Log-Ok "Config dir: ${DIM}$opencodeDir${NC}"
 
 # ── Step 2: Check existing install ───────────────────────────────
 if ((Test-Path $entryPath) -and (-not $Force)) {
     Log-Warn "Atlas already installed at: $entryPath"
     Log-Info "Use -Force to reinstall"
-    Read-Host "Presiona Enter para salir"
+    Read-Host "Press Enter to exit"
     return
 }
 
@@ -64,31 +86,30 @@ Log-Step "Creating directories..."
 if (-not (Test-Path $pluginsDir)) {
     New-Item -ItemType Directory -Path $pluginsDir -Force | Out-Null
 }
-Log-Ok "  $pluginsDir"
+Log-Ok "$pluginsDir"
 
 # ── Step 4: Install plugin entry file ────────────────────────────
-Log-Step "Installing plugin entry file..."
-Log-Info "  Downloading plugin file..."
-try {
-    Invoke-WebRequest -Uri "$GITHUB_RAW/plugin/atlas.ts" -OutFile $entryPath -UseBasicParsing
-    Log-Ok "  Downloaded: $entryPath"
-} catch {
-    $downloadErr = $_
-    Log-Warn "  Download failed: $downloadErr"
-    Log-Info "  Trying local copy..."
-    $localFound = $false
-    if ($null -ne $PSScriptRoot -and "$PSScriptRoot".Trim() -ne "") {
-        $localParent = Split-Path $PSScriptRoot -Parent
-        if ($null -ne $localParent -and "$localParent".Trim() -ne "") {
-            $localSource = Join-Path $localParent "plugin\atlas.ts"
-            if (Test-Path $localSource) {
-                Copy-Item -Path $localSource -Destination $entryPath -Force
-                Log-Ok "  Copied from repo: $entryPath"
-                $localFound = $true
-            }
+Log-Step "${GEAR} Installing plugin entry file..."
+
+$localFound = $false
+if ($null -ne $PSScriptRoot -and "$PSScriptRoot".Trim() -ne "") {
+    $localParent = Split-Path $PSScriptRoot -Parent
+    if ($null -ne $localParent -and "$localParent".Trim() -ne "") {
+        $localSource = Join-Path $localParent "plugin\atlas.ts"
+        if (Test-Path $localSource) {
+            Copy-Item -Path $localSource -Destination $entryPath -Force
+            Log-Ok "Copied from repo: ${DIM}$entryPath${NC}"
+            $localFound = $true
         }
     }
-    if (-not $localFound) {
+}
+
+if (-not $localFound) {
+    Log-Info "Downloading plugin file..."
+    try {
+        Invoke-WebRequest -Uri "$GITHUB_RAW/plugin/atlas.ts" -OutFile $entryPath -UseBasicParsing
+        Log-Ok "Downloaded: ${DIM}$entryPath${NC}"
+    } catch {
         throw "Could not install plugin file. Check your internet connection."
     }
 }
@@ -99,7 +120,7 @@ Log-Step "Setting up package.json..."
 function Get-AtlasPackageJson() {
     return @{
         "dependencies" = @{
-            "@atlas-opencode/core" = "^1.0.6"
+            "@atlas-opencode/core" = "^$ATLAS_VERSION"
             "@opencode-ai/plugin" = "^1.4.3"
         }
         "optionalDependencies" = @{
@@ -109,33 +130,33 @@ function Get-AtlasPackageJson() {
 }
 
 if (Test-Path $packageJsonPath) {
-    Log-Info "  Existing package.json found, merging dependencies..."
+    Log-Info "Existing package.json found, merging dependencies..."
     try {
         $raw = Get-Content $packageJsonPath -Raw
         $pkg = $raw | ConvertFrom-Json -AsHashtable
         if (-not $pkg.ContainsKey("dependencies")) {
             $pkg["dependencies"] = @{}
         }
-        $pkg["dependencies"]["@atlas-opencode/core"] = "^1.0.6"
+        $pkg["dependencies"]["@atlas-opencode/core"] = "^$ATLAS_VERSION"
         $pkg["dependencies"]["@opencode-ai/plugin"] = "^1.4.3"
         if (-not $pkg.ContainsKey("optionalDependencies")) {
             $pkg["optionalDependencies"] = @{}
         }
         $pkg["optionalDependencies"]["better-sqlite3"] = "^11.0.0"
         $pkg | ConvertTo-Json -Depth 10 | Set-Content $packageJsonPath -Encoding UTF8
-        Log-Ok "  Merged: $packageJsonPath"
+        Log-Ok "Merged: ${DIM}$packageJsonPath${NC}"
     } catch {
-        Log-Warn "  Merge failed, overwriting with fresh package.json"
+        Log-Warn "Merge failed, overwriting with fresh package.json"
         Get-AtlasPackageJson | ConvertTo-Json -Depth 10 | Set-Content $packageJsonPath -Encoding UTF8
-        Log-Ok "  Created: $packageJsonPath"
+        Log-Ok "Created: ${DIM}$packageJsonPath${NC}"
     }
 } else {
     Get-AtlasPackageJson | ConvertTo-Json -Depth 10 | Set-Content $packageJsonPath -Encoding UTF8
-    Log-Ok "  Created: $packageJsonPath"
+    Log-Ok "Created: ${DIM}$packageJsonPath${NC}"
 }
 
 # ── Step 6: Create atlas config ──────────────────────────────────
-Log-Step "Creating atlas.config.json..."
+Log-Step "${GEAR} Creating atlas.config.json..."
 
 $atlasConfig = @'
 {
@@ -169,67 +190,8 @@ $atlasConfig = @'
         "magistrate":    { "model": "openai/gpt-5.4",      "skills": ["*"], "mcps": [] },
         "envoy":         { "model": "openai/gpt-5.4",      "skills": ["*"], "mcps": [] },
         "quartermaster": { "model": "openai/gpt-5.4-mini", "skills": ["*"], "mcps": [] },
-        "tactician":     { "model": "openai/gpt-5.4",      "skills": ["*"], "mcps": [] }
-      },
-      "performance": {
-        "atlas":         { "model": "openai/gpt-5.4", "skills": ["*"], "mcps": [] },
-        "pathfinder":    { "model": "openai/gpt-5.4", "skills": ["*"], "mcps": [] },
-        "archivist":     { "model": "openai/gpt-5.4", "skills": ["*"], "mcps": ["websearch", "grep_app"] },
-        "elder":         { "model": "openai/gpt-5.4", "skills": ["*"], "mcps": [] },
-        "artisan":       { "model": "openai/gpt-5.4", "skills": ["*"], "mcps": [] },
-        "mender":        { "model": "openai/gpt-5.4", "skills": ["*"], "mcps": [] },
-        "tribunal":      { "model": "openai/gpt-5.4", "skills": ["*"], "mcps": [] },
-        "inspector":     { "model": "openai/gpt-5.4", "skills": ["*"], "mcps": [] },
-        "scribe":        { "model": "openai/gpt-5.4", "skills": ["*"], "mcps": [] },
-        "curator":       { "model": "openai/gpt-5.4", "skills": ["*"], "mcps": [] },
-        "sentinel":      { "model": "openai/gpt-5.4", "skills": ["*"], "mcps": [] },
-        "herald":        { "model": "openai/gpt-5.4", "skills": ["*"], "mcps": [] },
-        "lorekeeper":    { "model": "openai/gpt-5.4", "skills": ["*"], "mcps": [] },
-        "alchemist":     { "model": "openai/gpt-5.4", "skills": ["*"], "mcps": [] },
-        "magistrate":    { "model": "openai/gpt-5.4", "skills": ["*"], "mcps": [] },
-        "envoy":         { "model": "openai/gpt-5.4", "skills": ["*"], "mcps": [] },
-        "quartermaster": { "model": "openai/gpt-5.4", "skills": ["*"], "mcps": [] },
-        "tactician":     { "model": "openai/gpt-5.4", "skills": ["*"], "mcps": [] }
-      },
-      "economy": {
-        "atlas":         { "model": "openai/gpt-5.4-mini", "skills": ["*"], "mcps": [] },
-        "pathfinder":    { "model": "openai/gpt-5.4-mini", "skills": ["*"], "mcps": [] },
-        "archivist":     { "model": "openai/gpt-5.4-mini", "skills": ["*"], "mcps": [] },
-        "elder":         { "model": "openai/gpt-5.4-mini", "skills": ["*"], "mcps": [] },
-        "artisan":       { "model": "openai/gpt-5.4-mini", "skills": ["*"], "mcps": [] },
-        "mender":        { "model": "openai/gpt-5.4-mini", "skills": ["*"], "mcps": [] },
-        "tribunal":      { "model": "openai/gpt-5.4-mini", "skills": ["*"], "mcps": [] },
-        "inspector":     { "model": "openai/gpt-5.4-mini", "skills": ["*"], "mcps": [] },
-        "scribe":        { "model": "openai/gpt-5.4-mini", "skills": ["*"], "mcps": [] },
-        "curator":       { "model": "openai/gpt-5.4-mini", "skills": ["*"], "mcps": [] },
-        "sentinel":      { "model": "openai/gpt-5.4-mini", "skills": ["*"], "mcps": [] },
-        "herald":        { "model": "openai/gpt-5.4-mini", "skills": ["*"], "mcps": [] },
-        "lorekeeper":    { "model": "openai/gpt-5.4-mini", "skills": ["*"], "mcps": [] },
-        "alchemist":     { "model": "openai/gpt-5.4-mini", "skills": ["*"], "mcps": [] },
-        "magistrate":    { "model": "openai/gpt-5.4-mini", "skills": ["*"], "mcps": [] },
-        "envoy":         { "model": "openai/gpt-5.4-mini", "skills": ["*"], "mcps": [] },
-        "quartermaster": { "model": "openai/gpt-5.4-mini", "skills": ["*"], "mcps": [] },
-        "tactician":     { "model": "openai/gpt-5.4-mini", "skills": ["*"], "mcps": [] }
-      },
-      "premium": {
-        "atlas":         { "model": "anthropic/claude-opus-4.6", "skills": ["*"], "mcps": [] },
-        "pathfinder":    { "model": "anthropic/claude-opus-4.6", "skills": ["*"], "mcps": [] },
-        "archivist":     { "model": "anthropic/claude-opus-4.6", "skills": ["*"], "mcps": ["websearch", "grep_app"] },
-        "elder":         { "model": "anthropic/claude-opus-4.6", "skills": ["*"], "mcps": [] },
-        "artisan":       { "model": "anthropic/claude-opus-4.6", "skills": ["*"], "mcps": [] },
-        "mender":        { "model": "anthropic/claude-opus-4.6", "skills": ["*"], "mcps": [] },
-        "tribunal":      { "model": "anthropic/claude-opus-4.6", "skills": ["*"], "mcps": [] },
-        "inspector":     { "model": "anthropic/claude-opus-4.6", "skills": ["*"], "mcps": [] },
-        "scribe":        { "model": "anthropic/claude-opus-4.6", "skills": ["*"], "mcps": [] },
-        "curator":       { "model": "anthropic/claude-opus-4.6", "skills": ["*"], "mcps": [] },
-        "sentinel":      { "model": "anthropic/claude-opus-4.6", "skills": ["*"], "mcps": [] },
-        "herald":        { "model": "anthropic/claude-opus-4.6", "skills": ["*"], "mcps": [] },
-        "lorekeeper":    { "model": "anthropic/claude-opus-4.6", "skills": ["*"], "mcps": [] },
-        "alchemist":     { "model": "anthropic/claude-opus-4.6", "skills": ["*"], "mcps": [] },
-        "magistrate":    { "model": "anthropic/claude-opus-4.6", "skills": ["*"], "mcps": [] },
-        "envoy":         { "model": "anthropic/claude-opus-4.6", "skills": ["*"], "mcps": [] },
-        "quartermaster": { "model": "anthropic/claude-opus-4.6", "skills": ["*"], "mcps": [] },
-        "tactician":     { "model": "anthropic/claude-opus-4.6", "skills": ["*"], "mcps": [] }
+        "tactician":     { "model": "openai/gpt-5.4",      "skills": ["*"], "mcps": [] },
+        "squire":        { "model": "openai/gpt-5.4-mini", "skills": ["*"], "mcps": [] }
       }
     }
   },
@@ -242,7 +204,7 @@ $atlasConfig = @'
     "summarizeThresholdLines": 500,
     "compactThresholdTokens": 120000,
     "bypass": ["docker exec", "psql", "mysql", "ssh"],
-    "compressMarkdown": false,
+    "compressMarkdown": true,
     "redundancyCacheEnabled": true,
     "redundancyCacheSize": 16
   },
@@ -255,10 +217,10 @@ $atlasConfig = @'
 '@
 
 if ((Test-Path $configPath) -and (-not $Force)) {
-    Log-Info "  Config already exists, skipping (use -Force to overwrite)"
+    Log-Info "Config already exists, skipping (use -Force to overwrite)"
 } else {
     Set-Content -Path $configPath -Value $atlasConfig -Encoding UTF8
-    Log-Ok "  Created: $configPath"
+    Log-Ok "Created: ${DIM}$configPath${NC}"
 }
 
 # ── Step 7: Install dependencies ─────────────────────────────────
@@ -274,11 +236,11 @@ if (Get-Command bun -ErrorAction SilentlyContinue) {
 }
 
 if (-not $pm) {
-    Log-Warn "  No package manager found (bun/npm/pnpm)."
-    Log-Info "  OpenCode will auto-install on next startup."
-    Log-Info "  Or manually: cd `"$opencodeDir`" && npm install"
+    Log-Warn "No package manager found (bun/npm/pnpm)."
+    Log-Info "OpenCode will auto-install on next startup."
+    Log-Info "Or manually: cd `"$opencodeDir`" && npm install"
 } else {
-    Log-Info "  Using $pm..."
+    Log-Info "Using $pm..."
     try {
         Push-Location $opencodeDir
         switch ($pm) {
@@ -287,11 +249,11 @@ if (-not $pm) {
             "pnpm" { & pnpm install 2>&1 | Out-Null }
         }
         Pop-Location
-        Log-Ok "  Dependencies installed via $pm"
+        Log-Ok "Dependencies installed via $pm"
     } catch {
         Pop-Location
-        Log-Warn "  $pm install had issues. OpenCode will retry on startup."
-        Log-Info "  Manual fallback: cd `"$opencodeDir`" && npm install"
+        Log-Warn "$pm install had issues. OpenCode will retry on startup."
+        Log-Info "Manual fallback: cd `"$opencodeDir`" && npm install"
     }
 }
 
@@ -301,31 +263,31 @@ Log-Step "Verifying installation..."
 $errors = 0
 
 if (Test-Path $entryPath) {
-    Log-Ok "  Plugin:  $entryPath"
+    Log-Ok "Plugin:  ${DIM}$entryPath${NC}"
 } else {
-    Log-Err "  Plugin:  MISSING"
+    Log-Err "Plugin:  MISSING"
     $errors++
 }
 
 if (Test-Path $configPath) {
-    Log-Ok "  Config:  $configPath"
+    Log-Ok "Config:  ${DIM}$configPath${NC}"
 } else {
-    Log-Err "  Config:  MISSING"
+    Log-Err "Config:  MISSING"
     $errors++
 }
 
 if (Test-Path $packageJsonPath) {
-    Log-Ok "  Deps:    $packageJsonPath"
+    Log-Ok "Deps:    ${DIM}$packageJsonPath${NC}"
 } else {
-    Log-Err "  Deps:    MISSING"
+    Log-Err "Deps:    MISSING"
     $errors++
 }
 
 $coreModule = Join-Path $opencodeDir "node_modules\@atlas-opencode\core"
 if (Test-Path $coreModule) {
-    Log-Ok "  Core:    installed"
+    Log-Ok "Core:    installed"
 } else {
-    Log-Warn "  Core:    not yet installed (OpenCode will install on startup)"
+    Log-Warn "Core:    not yet installed (OpenCode will install on startup)"
 }
 
 if ($errors -gt 0) {
@@ -336,23 +298,34 @@ if ($errors -gt 0) {
 
 # ── Done ─────────────────────────────────────────────────────────
 Write-Host ""
-Log-Info "============================="
-Log-Ok "Atlas installed successfully!"
-Log-Info "============================="
+Write-Host "  ${GREEN}+======================================================+${NC}"
+Write-Host "  ${GREEN}|${NC}                                                      ${GREEN}|${NC}"
+Write-Host "  ${GREEN}|${NC}   ${SPARKLE} ${BOLD}Atlas installed successfully!${NC}                    ${GREEN}|${NC}"
+Write-Host "  ${GREEN}|${NC}                                                      ${GREEN}|${NC}"
+Write-Host "  ${GREEN}+======================================================+${NC}"
 Write-Host ""
-Log-Info "Start or restart OpenCode to load the plugin."
-Log-Info ""
-Log-Info "Echo mode: ON by default (full level)"
-Log-Info "  /atlas-echo lite   — minimal compression"
-Log-Info "  /atlas-echo full   — balanced (default)"
-Log-Info "  /atlas-echo ultra  — maximum compression"
-Log-Info "  /atlas-verbose     — disable all compression"
+Write-Host "  ${BOLD}Modules:${NC}"
+Write-Host "    ${BOLT} ${GREEN}Echo${NC}   - Output compression (lite/full/ultra)"
+Write-Host "    ${GEAR} ${BLUE}Forge${NC}  - Tool output optimization + diff cache"
+Write-Host "    * ${MAGENTA}Vault${NC}  - Persistent memory between sessions"
+Write-Host "    > ${CYAN}Codex${NC}  - Repository indexing and search"
+Write-Host ""
+Write-Host "  ${BOLD}Agents:${NC} ${DIM}19 specialized agents (incl. Squire @runner)${NC}"
+Write-Host ""
+Write-Host "  ${BOLD}Commands:${NC}"
+Write-Host "    ${DIM}/atlas-echo lite${NC}   - minimal compression"
+Write-Host "    ${DIM}/atlas-echo full${NC}   - balanced (default)"
+Write-Host "    ${DIM}/atlas-echo ultra${NC}  - maximum compression"
+Write-Host "    ${DIM}/atlas-verbose${NC}     - disable compression"
+Write-Host "    ${DIM}/atlas-status${NC}      - show status"
+Write-Host ""
+Write-Host "  ${DIM}Start or restart OpenCode to load the plugin.${NC}"
 Write-Host ""
 
 } catch {
     Write-Host ""
-    Log-Err "Error inesperado: $_"
+    Log-Err "Unexpected error: $_"
     Write-Host ""
 }
 
-Read-Host "Presiona Enter para salir"
+Read-Host "Press Enter to exit"

@@ -139,18 +139,31 @@ export function scanFiles(
 
   const matchesPattern = (path: string, patterns: string[]): boolean => {
     for (const pattern of patterns) {
-      const regexPattern = pattern
-        .replace(/[+.^${}()|[\]\\]/g, '\\$&')
+      let working = pattern.replace(
+        /\{([^{}]+)\}/g,
+        (_match, group: string) => `{{BRACE:${group}}}`,
+      )
+
+      working = working.replace(/[+.^$[\]\\]/g, '\\$&')
+
+      working = working
         .replace(/\*\*\//g, '{{GLOBSTAR_SLASH}}')
         .replace(/\*\*/g, '{{GLOBSTAR}}')
         .replace(/\*/g, '{{STAR}}')
         .replace(/\?/g, '{{QMARK}}')
+
+      working = working
         .replace(/{{GLOBSTAR_SLASH}}/g, '(?:.*/)?')
         .replace(/{{GLOBSTAR}}/g, '.*')
         .replace(/{{STAR}}/g, '[^/]*')
         .replace(/{{QMARK}}/g, '.')
 
-      const regex = new RegExp(`^${regexPattern}$`, 'i')
+      working = working.replace(
+        /\{\{BRACE:([^}]+)\}\}/g,
+        (_match, group: string) => `(?:${group.split(',').join('|')})`,
+      )
+
+      const regex = new RegExp(`^${working}$`, 'i')
       if (regex.test(path)) {
         return true
       }
