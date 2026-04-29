@@ -1,6 +1,24 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { loadConfig } from '@/config/loader'
 import { DEFAULT_CONFIG } from '@/config/schema'
+
+// Mock para evitar dependencia del filesystem real del usuario
+vi.mock('node:fs', async () => {
+  const actual = await vi.importActual('node:fs')
+  return {
+    ...actual,
+    existsSync: vi.fn(() => false),
+    readFileSync: vi.fn(),
+  }
+})
+
+vi.mock('node:os', async () => {
+  const actual = await vi.importActual('node:os')
+  return {
+    ...actual,
+    homedir: () => '/home/test',
+  }
+})
 
 describe('Config Loader', () => {
   it('returns default config when no file exists', () => {
