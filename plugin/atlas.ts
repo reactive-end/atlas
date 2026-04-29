@@ -32,6 +32,23 @@ import {
   clearDiffCache,
   compressReadResult,
   clearReadCache,
+  handleListSkills,
+  handleViewSkill,
+  handleManageSkill,
+  resolveSkillsPaths,
+  isSkillsEnabled,
+  getCandidatesConfig,
+  isCandidatesEnabled,
+  analyzeToolExecution,
+  persistCandidates,
+  recordToolExecution,
+  handleListCandidates,
+  runSkillsCurator as runCuratorSkill,
+  getSkillsCuratorStatus as getCuratorStatusSkill,
+  setSkillsCuratorPaused as setCuratorPaused,
+  runCuratorReview as runCuratorReviewSkill,
+  buildAthenaStats,
+  formatAthenaStats,
 } from '@atlas-opencode/core'
 
 type AtlasPluginState = {
@@ -218,6 +235,30 @@ const atlasPlugin: Plugin = async (input: PluginInput, _options?: PluginOptions)
         if (vaultSaved) {
           sessionState.stats.vaultSaved++
         }
+
+        // ── Athena Phase 3: candidates detection ──────────────────────────────
+        // Safe: wrapped in own try/catch, non-blocking, non-intrusive
+        try {
+          const candidatesConfig = getCandidatesConfig(config)
+          if (isCandidatesEnabled(candidatesConfig)) {
+            const toolName = toolInput.tool
+            const toolArgs = (toolInput as Record<string, unknown>).args as Record<string, unknown> ?? {}
+            const toolOutputStr = toolOutput.output ?? ''
+
+            // Record call count for repeated-pattern detection
+            recordToolExecution(sessionID)
+
+            // Analyze for candidates
+            const detected = analyzeToolExecution(toolName, toolArgs, toolOutputStr, sessionID)
+
+            // Persist to candidates.json if any found
+            if (detected.length > 0) {
+              persistCandidates(detected, candidatesConfig)
+            }
+          }
+        } catch {
+          // Safe: candidates detection failure does not affect tool output
+        }
       } catch {
         // graceful
       }
@@ -392,7 +433,7 @@ const atlasPlugin: Plugin = async (input: PluginInput, _options?: PluginOptions)
       }
     },
 
-    ...((vaultReady || config.forge.enabled) ? {
+    ...((vaultReady || config.forge.enabled || config.athena?.enabled) ? {
       tool: {
         ...(vaultReady ? {
           mem_search: tool({
@@ -466,6 +507,123 @@ const atlasPlugin: Plugin = async (input: PluginInput, _options?: PluginOptions)
               clearDiffCache()
               clearReadCache()
               return 'All Forge caches cleared (redundancy, diff, read)'
+            },
+          }),
+        } : {}),
+        ...(config.athena?.enabled ? {
+          athena_list_skills: tool({
+            description: 'List registered skills in Athena. Returns list of available skills.',
+            args: {
+              filter: tool.schema.string().describe('Filter: all, active, disabled, pending').optional(),
+              tags: tool.schema.string().describe('Comma-separated tags to filter').optional(),
+              limit: tool.schema.number().describe('Max results (default 20)').optional(),
+              offset: tool.schema.number().describe('Results offset (default 0)').optional(),
+            },
+            async execute(args) {
+              const athenaConfig = config.athena || { enabled: true, skills: { enabled: true } }
+              if (!isSkillsEnabled(athenaConfig)) {
+                return 'Athena skills module is not yet enabled.'
+              }
+              const paths = resolveSkillsPaths(athenaConfig.skills)
+              const tags = args.tags ? args.tags.split(',').map(t => t.trim()).filter(Boolean) : undefined
+              const result = handleListSkills(
+                {
+                  filter: (args.filter as 'all') || 'all',
+                  tags,
+                  limit: args.limit ?? 20,
+                  offset: args.offset ?? 0,
+                },
+                athenaConfig.skills,
+                paths,
+              )
+              return result.content
+            },
+          }),
+          athena_view_skill: tool({
+            description: 'View details of a specific skill by ID.',
+            args: {
+              skill_id: tool.schema.string().describe('Skill ID'),
+            },
+            async execute(args) {
+              const athenaConfig = config.athena || { enabled: true, skills: { enabled: true } }
+              if (!isSkillsEnabled(athenaConfig)) {
+                return 'Athena skills module is not yet enabled.'
+              }
+              const paths = resolveSkillsPaths(athenaConfig.skills)
+              const result = handleViewSkill(args.skill_id, {}, athenaConfig.skills, paths)
+              return result.content
+            },
+          }),
+          athena_manage_skill: tool({
+            description: 'Manage a skill (enable, disable, delete).',
+            args: {
+              action: tool.schema.string().describe('Action: enable, disable, delete'),
+              skill_id: tool.schema.string().describe('Skill ID'),
+            },
+            async execute(args) {
+              const athenaConfig = config.athena || { enabled: true, skills: { enabled: true } }
+              if (!isSkillsEnabled(athenaConfig)) {
+                return 'Athena skills module is not yet enabled.'
+              }
+              const paths = resolveSkillsPaths(athenaConfig.skills)
+              const result = handleManageSkill(
+                { action: args.action as 'enable', skillId: args.skill_id },
+                athenaConfig.skills,
+                paths,
+              )
+              return result.content
+            },
+          }),
+          athena_curator_status: tool({
+            description: 'Get curator status including paused state, skill counts, and statistics.',
+            args: {},
+            async execute() {
+              const result = getCuratorStatusSkill()
+              return result.content
+            },
+          }),
+          athena_curator_run: tool({
+            description: 'Run curator to evaluate skills and apply lifecycle transitions.',
+            args: {
+              dry_run: tool.schema.boolean().describe('Run without applying changes').optional(),
+            },
+            async execute(args) {
+              const result = runCuratorSkill(
+                config.athena?.curator,
+                args.dry_run,
+              )
+              return result.content
+            },
+          }),
+          athena_curator_review: tool({
+            description: 'Run heuristic curator consolidation review and return summary/report.',
+            args: {
+              verbose: tool.schema.boolean().describe('Return full JSON report').optional(),
+            },
+            async execute(args) {
+              const result = runCuratorReviewSkill()
+              if (args.verbose && result.data) {
+                return JSON.stringify(result.data, null, 2)
+              }
+              return result.content
+            },
+          }),
+          athena_curator_pause: tool({
+            description: 'Toggle curator pause state. Use true to pause, false to resume.',
+            args: {
+              paused: tool.schema.boolean().describe('Pause state: true to pause, false to resume'),
+            },
+            async execute(args) {
+              const result = setCuratorPaused(args.paused)
+              return result.content
+            },
+          }),
+          athena_stats: tool({
+            description: 'Get unified Athena telemetry stats as JSON. Returns metrics for skills, candidates, and curator.',
+            args: {},
+            async execute() {
+              const stats = buildAthenaStats(config)
+              return formatAthenaStats(stats)
             },
           }),
         } : {}),
