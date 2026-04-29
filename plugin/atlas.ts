@@ -37,7 +37,13 @@ import {
   handleManageSkill,
   resolveSkillsPaths,
   isSkillsEnabled,
-} from '@atlas-opencode/core'
+  getCandidatesConfig,
+  isCandidatesEnabled,
+  analyzeToolExecution,
+  persistCandidates,
+  recordToolExecution,
+  handleListCandidates,
+} from '@atlas-Opencode/core'
 
 type AtlasPluginState = {
   echoLevel: 'lite' | 'full' | 'ultra'
@@ -222,6 +228,30 @@ const atlasPlugin: Plugin = async (input: PluginInput, _options?: PluginOptions)
 
         if (vaultSaved) {
           sessionState.stats.vaultSaved++
+        }
+
+        // ── Athena Phase 3: candidates detection ──────────────────────────────
+        // Safe: wrapped in own try/catch, non-blocking, non-intrusive
+        try {
+          const candidatesConfig = getCandidatesConfig(config)
+          if (isCandidatesEnabled(candidatesConfig)) {
+            const toolName = toolInput.tool
+            const toolArgs = (toolInput as Record<string, unknown>).args as Record<string, unknown> ?? {}
+            const toolOutputStr = toolOutput.output ?? ''
+
+            // Record call count for repeated-pattern detection
+            recordToolExecution(sessionID)
+
+            // Analyze for candidates
+            const detected = analyzeToolExecution(toolName, toolArgs, toolOutputStr, sessionID)
+
+            // Persist to candidates.json if any found
+            if (detected.length > 0) {
+              persistCandidates(detected, candidatesConfig)
+            }
+          }
+        } catch {
+          // Safe: candidates detection failure does not affect tool output
         }
       } catch {
         // graceful

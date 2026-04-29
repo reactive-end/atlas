@@ -3,7 +3,7 @@ import type { AtlasConfig } from '@/config/schema'
 
 // Re-exports for the plugin entry point
 export type { AgentDefinition, PluginState, EchoLevel, AgentMode } from '@/types'
-export type { AtlasConfig, AgentPresetConfig, AgentPresetsMap, AthenaConfig, SkillsConfig } from '@/config/schema'
+export type { AtlasConfig, AgentPresetConfig, AgentPresetsMap, AthenaConfig, SkillsConfig, CandidatesConfig } from '@/config/schema'
 
 // Config
 export { loadConfig } from '@/config/loader'
@@ -96,6 +96,43 @@ export type {
   ManageSkillOptions,
   SkillToolResult,
 } from '@/modules/skills/types'
+
+// Athena Phase 3 - skill candidates detection and persistence
+export {
+  analyzeToolExecution,
+  persistCandidates,
+  recordToolExecution,
+  handleListCandidates,
+  getCandidatesConfig,
+  isCandidatesEnabled,
+} from '@/modules/candidates/detector'
+export {
+  getCandidatesBasePath,
+  getCandidatesFilePath,
+  ensureCandidatesDirectory,
+  loadCandidatesManifest,
+  saveCandidatesManifest,
+  createDefaultCandidatesManifest,
+  getOrCreateCandidatesManifest,
+  findCandidateById,
+  upsertCandidate,
+  removeExpiredCandidates,
+  enforceMaxCandidates,
+  filterCandidatesByOptions,
+  getSessionToolCallCount,
+  incrementSessionToolCallCount,
+  resetSessionToolCallCount,
+} from '@/modules/candidates/storage'
+export type {
+  CandidateStatus,
+  CandidateEvidence,
+  CandidateEvidenceReason,
+  SkillCandidate,
+  CandidatesManifest,
+  CandidatesStats,
+  ListCandidatesOptions,
+  CandidatesToolResult,
+} from '@/modules/candidates/types'
 
 // Agent factories (for building all agent prompts)
 export { createAtlasAgent } from '@/modules/agents/atlas'

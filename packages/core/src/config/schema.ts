@@ -7,6 +7,15 @@ export interface SkillsConfig {
   basePath?: string
 }
 
+// CandidatesConfig for Phase 3 skill candidate detection
+export interface CandidatesConfig {
+  enabled: boolean
+  minToolCalls?: number
+  maxCandidates?: number
+  expireAfterDays?: number
+  minConfidence?: number
+}
+
 export interface AgentPresetConfig {
   model: string
   skills: string[]
@@ -52,6 +61,7 @@ export interface VaultConfig {
 export interface AthenaConfig {
   enabled: boolean
   skills: SkillsConfig
+  candidates: CandidatesConfig
 }
 
 export interface AtlasConfig {
@@ -199,6 +209,13 @@ export const DEFAULT_CONFIG: AtlasConfig = {
     skills: {
       enabled: true,
       basePath: undefined,
+    },
+    candidates: {
+      enabled: false,
+      minToolCalls: 5,
+      maxCandidates: 50,
+      expireAfterDays: 30,
+      minConfidence: 60,
     },
   },
 }
