@@ -32,6 +32,11 @@ import {
   clearDiffCache,
   compressReadResult,
   clearReadCache,
+  handleListSkills,
+  handleViewSkill,
+  handleManageSkill,
+  resolveSkillsPaths,
+  isSkillsEnabled,
 } from '@atlas-opencode/core'
 
 type AtlasPluginState = {
@@ -392,7 +397,7 @@ const atlasPlugin: Plugin = async (input: PluginInput, _options?: PluginOptions)
       }
     },
 
-    ...((vaultReady || config.forge.enabled) ? {
+    ...((vaultReady || config.forge.enabled || config.athena?.enabled) ? {
       tool: {
         ...(vaultReady ? {
           mem_search: tool({
@@ -466,6 +471,63 @@ const atlasPlugin: Plugin = async (input: PluginInput, _options?: PluginOptions)
               clearDiffCache()
               clearReadCache()
               return 'All Forge caches cleared (redundancy, diff, read)'
+            },
+          }),
+        } : {}),
+        ...(config.athena?.enabled ? {
+          athena_list_skills: tool({
+            description: 'List registered skills in Athena. Returns list of available skills.',
+            args: {
+              filter: tool.schema.string().describe('Filter: all, active, disabled, pending').optional(),
+              limit: tool.schema.number().describe('Max results (default 20)').optional(),
+            },
+            async execute(args) {
+              const athenaConfig = config.athena || { enabled: true, skills: { enabled: true } }
+              if (!isSkillsEnabled(athenaConfig)) {
+                return 'Athena skills module is not yet enabled.'
+              }
+              const paths = resolveSkillsPaths(athenaConfig.skills)
+              const result = handleListSkills(
+                { filter: (args.filter as 'all') || 'all', limit: args.limit ?? 20 },
+                athenaConfig.skills,
+                paths,
+              )
+              return result.content
+            },
+          }),
+          athena_view_skill: tool({
+            description: 'View details of a specific skill by ID.',
+            args: {
+              skill_id: tool.schema.string().describe('Skill ID'),
+            },
+            async execute(args) {
+              const athenaConfig = config.athena || { enabled: true, skills: { enabled: true } }
+              if (!isSkillsEnabled(athenaConfig)) {
+                return 'Athena skills module is not yet enabled.'
+              }
+              const paths = resolveSkillsPaths(athenaConfig.skills)
+              const result = handleViewSkill(args.skill_id, {}, athenaConfig.skills, paths)
+              return result.content
+            },
+          }),
+          athena_manage_skill: tool({
+            description: 'Manage a skill (enable, disable, delete).',
+            args: {
+              action: tool.schema.string().describe('Action: enable, disable, delete'),
+              skill_id: tool.schema.string().describe('Skill ID'),
+            },
+            async execute(args) {
+              const athenaConfig = config.athena || { enabled: true, skills: { enabled: true } }
+              if (!isSkillsEnabled(athenaConfig)) {
+                return 'Athena skills module is not yet enabled.'
+              }
+              const paths = resolveSkillsPaths(athenaConfig.skills)
+              const result = handleManageSkill(
+                { action: args.action as 'enable', skillId: args.skill_id },
+                athenaConfig.skills,
+                paths,
+              )
+              return result.content
             },
           }),
         } : {}),

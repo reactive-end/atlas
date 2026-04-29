@@ -1,6 +1,12 @@
 import type { EchoLevel, AgentMode, PresetName } from '@/types'
 import type { CodexConfig } from '@/modules/codex/types'
 
+// SkillsConfig defined locally to avoid circular dependency
+export interface SkillsConfig {
+  enabled: boolean
+  basePath?: string
+}
+
 export interface AgentPresetConfig {
   model: string
   skills: string[]
@@ -43,12 +49,18 @@ export interface VaultConfig {
   stripPrivateTags: boolean
 }
 
+export interface AthenaConfig {
+  enabled: boolean
+  skills: SkillsConfig
+}
+
 export interface AtlasConfig {
   echo: EchoConfig
   agents: AgentsConfig
   forge: ForgeConfig
   vault: VaultConfig
   codex: CodexConfig
+  athena: AthenaConfig
 }
 
 export const DEFAULT_CONFIG: AtlasConfig = {
@@ -181,5 +193,12 @@ export const DEFAULT_CONFIG: AtlasConfig = {
     ],
     maxFileSize: 50000,
     autoIndexOnStart: true,
+  },
+  athena: {
+    enabled: true,
+    skills: {
+      enabled: true,
+      basePath: undefined,
+    },
   },
 }

@@ -3,7 +3,7 @@ import type { AtlasConfig } from '@/config/schema'
 
 // Re-exports for the plugin entry point
 export type { AgentDefinition, PluginState, EchoLevel, AgentMode } from '@/types'
-export type { AtlasConfig, AgentPresetConfig, AgentPresetsMap } from '@/config/schema'
+export type { AtlasConfig, AgentPresetConfig, AgentPresetsMap, AthenaConfig, SkillsConfig } from '@/config/schema'
 
 // Config
 export { loadConfig } from '@/config/loader'
@@ -65,6 +65,30 @@ export { handleCodexSearch, handleCodexReindex } from '@/modules/codex/tool-hand
 export { buildCodexPrompt, buildCodexContextPrompt } from '@/modules/codex/prompt'
 export { initializeCodex } from '@/modules/codex/initializer'
 export type { CodexConfig } from '@/modules/codex/types'
+
+// Athena skills (storage and registry)
+export {
+  getDefaultSkillsPaths,
+  ensureSkillsDirectory,
+  loadManifest,
+  saveManifest,
+  createDefaultManifest,
+  getAthenaConfigDefaults,
+  resolveSkillsPaths,
+  isSkillsEnabled,
+} from '@/modules/skills/storage'
+export { handleListSkills, handleViewSkill, handleManageSkill } from '@/modules/skills/tool-handlers'
+export type {
+  SkillStatus,
+  SkillDefinition,
+  SkillManifest,
+  SkillsStoragePaths,
+  SkillListFilter,
+  ListSkillsOptions,
+  ViewSkillOptions,
+  ManageSkillOptions,
+  SkillToolResult,
+} from '@/modules/skills/types'
 
 // Agent factories (for building all agent prompts)
 export { createAtlasAgent } from '@/modules/agents/atlas'
