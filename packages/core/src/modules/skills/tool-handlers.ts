@@ -22,8 +22,90 @@ import {
 } from './storage'
 import type { SkillsConfig } from '@/config/schema'
 
+// ---------------------------------------------------------------------------
+// Hardening Constants
+// ---------------------------------------------------------------------------
+
+const MAX_LIMIT = 100
+const MIN_LIMIT = 1
+const DEFAULT_LIMIT = 20
+
+// ---------------------------------------------------------------------------
+// Input Validation
+// ---------------------------------------------------------------------------
+
+/**
+ * Validate limit value - must be positive and within bounds.
+ */
+export function validateLimit(limit: unknown): number {
+  const parsed = typeof limit === 'number' ? limit : parseInt(String(limit), 10)
+
+  if (isNaN(parsed) || parsed < MIN_LIMIT) {
+    return MIN_LIMIT
+  }
+
+  if (parsed > MAX_LIMIT) {
+    return MAX_LIMIT
+  }
+
+  return parsed
+}
+
+/**
+ * Validate offset value - must be non-negative.
+ */
+export function validateOffset(offset: unknown): number {
+  const parsed = typeof offset === 'number' ? offset : parseInt(String(offset), 10)
+
+  if (isNaN(parsed) || parsed < 0) {
+    return 0
+  }
+
+  return parsed
+}
+
+/**
+ * Validate skill ID - must be non-empty string.
+ */
+export function validateSkillId(id: unknown): string | null {
+  if (!id || typeof id !== 'string') {
+    return null
+  }
+
+  const trimmed = id.trim()
+
+  if (trimmed.length === 0) {
+    return null
+  }
+
+  return trimmed
+}
+
+/**
+ * Validate action - must be one of allowed values.
+ */
+export function validateAction(action: unknown): 'enable' | 'disable' | 'delete' | null {
+  if (typeof action !== 'string') {
+    return null
+  }
+
+  const normalized = action.toLowerCase().trim()
+
+  if (normalized === 'enable' || normalized === 'disable' || normalized === 'delete') {
+    return normalized
+  }
+
+  return null
+}
+
 function normalizeFilter(filter?: SkillListFilter): SkillListFilter {
-  return filter ?? 'all'
+  const validFilters: SkillListFilter[] = ['all', 'active', 'disabled', 'pending']
+
+  if (!filter || !validFilters.includes(filter)) {
+    return 'all'
+  }
+
+  return filter
 }
 
 function filterSkills(
@@ -84,8 +166,10 @@ export function handleListSkills(
 
   const filter = normalizeFilter(options.filter)
   const tags = options.tags
-  const limit = options.limit ?? 20
-  const offset = options.offset ?? 0
+
+  // Apply hardening: validate limit/offset
+  const limit = validateLimit(options.limit ?? DEFAULT_LIMIT)
+  const offset = validateOffset(options.offset ?? 0)
 
   let skills = filterSkills(manifest.skills, filter, tags)
 
@@ -123,6 +207,15 @@ export function handleViewSkill(
     }
   }
 
+  // Hardening: validate skill ID
+  const validatedId = validateSkillId(skillId)
+  if (!validatedId) {
+    return {
+      success: false,
+      content: 'Invalid skill ID: must be a non-empty string.',
+    }
+  }
+
   const manifest = loadManifest(paths)
 
   if (!manifest) {
@@ -132,16 +225,16 @@ export function handleViewSkill(
     }
   }
 
-  const skill = findSkillById(manifest, skillId)
+  const skill = findSkillById(manifest, validatedId)
 
   if (!skill) {
     return {
       success: false,
-      content: `Skill '${skillId}' not found.`,
+      content: `Skill '${validatedId}' not found.`,
     }
   }
 
-  const hasContent = skillContentExists(paths, skillId)
+  const hasContent = skillContentExists(paths, validatedId)
 
   return {
     success: true,
@@ -252,6 +345,23 @@ export function handleManageSkill(
     }
   }
 
+  // Hardening: validate action and skill ID
+  const action = validateAction(options.action)
+  if (!action) {
+    return {
+      success: false,
+      content: `Invalid action '${options.action}'. Valid actions: enable, disable, delete.`,
+    }
+  }
+
+  const skillId = validateSkillId(options.skillId)
+  if (!skillId) {
+    return {
+      success: false,
+      content: 'Invalid skill ID: must be a non-empty string.',
+    }
+  }
+
   const manifest = loadManifest(paths)
 
   if (!manifest) {
@@ -260,8 +370,6 @@ export function handleManageSkill(
       content: 'No skills manifest found. Please initialize the skills registry first.',
     }
   }
-
-  const { action, skillId } = options
 
   switch (action) {
     case 'enable':

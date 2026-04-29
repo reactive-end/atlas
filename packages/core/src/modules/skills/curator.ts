@@ -60,6 +60,9 @@ export function getTestOverridePath(): string | null {
   return testOverridePath
 }
 
+// Re-export internal state loaders for stats module
+export { loadCuratorState, loadUsageData }
+
 // ---------------------------------------------------------------------------
 // Path resolution
 // ---------------------------------------------------------------------------

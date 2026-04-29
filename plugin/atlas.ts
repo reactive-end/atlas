@@ -46,6 +46,8 @@ import {
   runSkillsCurator as runCuratorSkill,
   getSkillsCuratorStatus as getCuratorStatusSkill,
   setSkillsCuratorPaused as setCuratorPaused,
+  buildAthenaStats,
+  formatAthenaStats,
 } from '@atlas-opencode/core'
 
 type AtlasPluginState = {
@@ -600,6 +602,14 @@ const atlasPlugin: Plugin = async (input: PluginInput, _options?: PluginOptions)
             async execute(args) {
               const result = setCuratorPaused(args.paused)
               return result.content
+            },
+          }),
+          athena_stats: tool({
+            description: 'Get unified Athena telemetry stats as JSON. Returns metrics for skills, candidates, and curator.',
+            args: {},
+            async execute() {
+              const stats = buildAthenaStats(config)
+              return formatAthenaStats(stats)
             },
           }),
         } : {}),

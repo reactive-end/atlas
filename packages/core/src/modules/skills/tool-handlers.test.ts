@@ -314,7 +314,7 @@ describe('handleManageSkill', () => {
     )
 
     expect(result.success).toBe(false)
-    expect(result.content).toContain('Unknown action')
+    expect(result.content).toContain('Invalid action')
   })
 
   it('should return already status message when no change needed', () => {
