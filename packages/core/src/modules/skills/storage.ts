@@ -1,10 +1,10 @@
 // Storage utilities for Skills module
 // Handles path resolution and persistence in ~/.athena/
 
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync, writeFileSync, rmSync } from 'node:fs'
 import { join } from 'node:path'
 import { homedir } from 'node:os'
-import type { SkillsStoragePaths, SkillManifest } from './types'
+import type { SkillsStoragePaths, SkillManifest, SkillDefinition } from './types'
 import type { SkillsConfig } from '@/config/schema'
 
 const DEFAULT_BASE_PATH = '.athena'
@@ -87,4 +87,74 @@ export function resolveSkillsPaths(config: SkillsConfig): SkillsStoragePaths {
 
 export function isSkillsEnabled(config: SkillsConfig): boolean {
   return config.enabled === true
+}
+
+// CRUD utilities
+
+export function findSkillById(
+  manifest: SkillManifest,
+  skillId: string,
+): SkillDefinition | undefined {
+  return manifest.skills.find(s => s.id === skillId)
+}
+
+export function updateSkillInManifest(
+  manifest: SkillManifest,
+  updatedSkill: SkillDefinition,
+): SkillManifest {
+  const index = manifest.skills.findIndex(s => s.id === updatedSkill.id)
+
+  if (index >= 0) {
+    const newManifest = { ...manifest }
+    newManifest.skills = [...manifest.skills]
+    newManifest.skills[index] = updatedSkill
+    return newManifest
+  }
+
+  return manifest
+}
+
+export function addSkillToManifest(
+  manifest: SkillManifest,
+  newSkill: SkillDefinition,
+): SkillManifest {
+  return {
+    ...manifest,
+    skills: [...manifest.skills, newSkill],
+  }
+}
+
+export function removeSkillFromManifest(
+  manifest: SkillManifest,
+  skillId: string,
+): SkillManifest {
+  return {
+    ...manifest,
+    skills: manifest.skills.filter(s => s.id !== skillId),
+  }
+}
+
+export function getSkillContentPath(
+  paths: SkillsStoragePaths,
+  skillId: string,
+): string {
+  return join(paths.skills, skillId, 'skill.ts')
+}
+
+export function skillContentExists(
+  paths: SkillsStoragePaths,
+  skillId: string,
+): boolean {
+  const contentPath = getSkillContentPath(paths, skillId)
+  return existsSync(contentPath)
+}
+
+export function deleteSkillContent(
+  paths: SkillsStoragePaths,
+  skillId: string,
+): void {
+  const contentDir = join(paths.skills, skillId)
+  if (existsSync(contentDir)) {
+    rmSync(contentDir, { recursive: true, force: true })
+  }
 }

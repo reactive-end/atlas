@@ -479,7 +479,9 @@ const atlasPlugin: Plugin = async (input: PluginInput, _options?: PluginOptions)
             description: 'List registered skills in Athena. Returns list of available skills.',
             args: {
               filter: tool.schema.string().describe('Filter: all, active, disabled, pending').optional(),
+              tags: tool.schema.string().describe('Comma-separated tags to filter').optional(),
               limit: tool.schema.number().describe('Max results (default 20)').optional(),
+              offset: tool.schema.number().describe('Results offset (default 0)').optional(),
             },
             async execute(args) {
               const athenaConfig = config.athena || { enabled: true, skills: { enabled: true } }
@@ -487,8 +489,14 @@ const atlasPlugin: Plugin = async (input: PluginInput, _options?: PluginOptions)
                 return 'Athena skills module is not yet enabled.'
               }
               const paths = resolveSkillsPaths(athenaConfig.skills)
+              const tags = args.tags ? args.tags.split(',').map(t => t.trim()).filter(Boolean) : undefined
               const result = handleListSkills(
-                { filter: (args.filter as 'all') || 'all', limit: args.limit ?? 20 },
+                {
+                  filter: (args.filter as 'all') || 'all',
+                  tags,
+                  limit: args.limit ?? 20,
+                  offset: args.offset ?? 0,
+                },
                 athenaConfig.skills,
                 paths,
               )

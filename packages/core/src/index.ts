@@ -76,6 +76,13 @@ export {
   getAthenaConfigDefaults,
   resolveSkillsPaths,
   isSkillsEnabled,
+  findSkillById,
+  updateSkillInManifest,
+  addSkillToManifest,
+  removeSkillFromManifest,
+  getSkillContentPath,
+  skillContentExists,
+  deleteSkillContent,
 } from '@/modules/skills/storage'
 export { handleListSkills, handleViewSkill, handleManageSkill } from '@/modules/skills/tool-handlers'
 export type {
