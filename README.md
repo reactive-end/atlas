@@ -194,9 +194,36 @@ Atlas reads `atlas.config.json` from `~/.config/opencode/`:
     "enabled": true,
     "injectMemoryProtocol": true,
     "stripPrivateTags": true
+  },
+  "athena": {
+    "enabled": true,
+    "skills": {
+      "enabled": true,
+      "basePath": null
+    },
+    "candidates": {
+      "enabled": false,
+      "minToolCalls": 5,
+      "maxCandidates": 50,
+      "expireAfterDays": 30,
+      "minConfidence": 60
+    },
+    "curator": {
+      "enabled": false,
+      "staleAfterDays": 30,
+      "archiveAfterDays": 90,
+      "autoArchive": false,
+      "reviewEnabled": false
+    }
   }
 }
 ```
+
+**Athena** — The skills engine. Because your best prompts deserve to be saved and reused:
+
+- **Skills registry** — Creates, lists, enables/disables, and manages reusable skill definitions stored in `~/.athena/`
+- **Candidates** — Auto-detects promising tool patterns (disabled by default) — watches what you use repeatedly and suggests it as a skill
+- **Curator** — Reviews and manages skill lifecycle (disabled by default) — archives stale skills, keeps your registry lean
 
 ### Agent Presets
 

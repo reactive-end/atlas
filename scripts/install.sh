@@ -237,6 +237,26 @@ else
     "enabled": true,
     "injectMemoryProtocol": true,
     "stripPrivateTags": true
+  },
+  "athena": {
+    "enabled": true,
+    "skills": {
+      "enabled": true
+    },
+    "candidates": {
+      "enabled": false,
+      "minToolCalls": 5,
+      "maxCandidates": 50,
+      "expireAfterDays": 30,
+      "minConfidence": 60
+    },
+    "curator": {
+      "enabled": false,
+      "staleAfterDays": 30,
+      "archiveAfterDays": 90,
+      "autoArchive": false,
+      "reviewEnabled": false
+    }
   }
 }
 ATLASCFG
