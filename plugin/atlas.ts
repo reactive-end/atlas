@@ -46,6 +46,7 @@ import {
   runSkillsCurator as runCuratorSkill,
   getSkillsCuratorStatus as getCuratorStatusSkill,
   setSkillsCuratorPaused as setCuratorPaused,
+  runCuratorReview as runCuratorReviewSkill,
   buildAthenaStats,
   formatAthenaStats,
 } from '@atlas-opencode/core'
@@ -591,6 +592,19 @@ const atlasPlugin: Plugin = async (input: PluginInput, _options?: PluginOptions)
                 config.athena?.curator,
                 args.dry_run,
               )
+              return result.content
+            },
+          }),
+          athena_curator_review: tool({
+            description: 'Run heuristic curator consolidation review and return summary/report.',
+            args: {
+              verbose: tool.schema.boolean().describe('Return full JSON report').optional(),
+            },
+            async execute(args) {
+              const result = runCuratorReviewSkill()
+              if (args.verbose && result.data) {
+                return JSON.stringify(result.data, null, 2)
+              }
               return result.content
             },
           }),

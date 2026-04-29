@@ -2,7 +2,7 @@
 // Covers lifecycle transitions, pinned skills, and pause functionality
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { runCurator, getCuratorStatus, setCuratorPaused, touchSkill, togglePinned, isCuratorPaused, setTestOverridePath } from './curator'
+import { runCurator, getCuratorStatus, setCuratorPaused, touchSkill, togglePinned, isCuratorPaused, setTestOverridePath, runCuratorReview, loadCuratorReview } from './curator'
 import { existsSync, mkdirSync, writeFileSync, readFileSync, rmSync } from 'node:fs'
 import { join } from 'node:path'
 import { homedir } from 'node:os'
@@ -255,6 +255,197 @@ describe('Skills Curator', () => {
     it('should return true when paused', () => {
       setCuratorPaused(true)
       expect(isCuratorPaused()).toBe(true)
+    })
+  })
+
+  describe('runCuratorReview', () => {
+    const REVIEW_PATH = join(TEST_DIR, 'curator-review.json')
+
+    it('should generate review report with empty state', () => {
+      const result = runCuratorReview()
+
+      expect(result.success).toBe(true)
+      expect(result.content).toContain('Curator Review Report')
+      expect(result.data?.totalSkills).toBe(0)
+      expect(result.data?.summary.duplicateCount).toBe(0)
+      expect(result.data?.summary.similarCount).toBe(0)
+      expect(result.data?.summary.obsoleteCount).toBe(0)
+    })
+
+    it('should persist review report to disk', () => {
+      runCuratorReview()
+
+      expect(existsSync(REVIEW_PATH)).toBe(true)
+      const report = JSON.parse(readFileSync(REVIEW_PATH, 'utf-8'))
+      expect(report.version).toBe('1.0.0')
+      expect(report.generatedAt).toBeDefined()
+    })
+
+    it('should detect duplicate skills by name', () => {
+      // Create skills with very similar names
+      const now = Date.now()
+      const oldTimestamp = now - 20 * 86_400_000 // 20 days ago
+
+      writeFileSync(USAGE_PATH, JSON.stringify({
+        version: '1.0.0',
+        skills: [
+          {
+            skillId: 'skill-1',
+            skillName: 'React Component Builder',
+            lastUsedAt: now,
+            state: 'active',
+            pinned: false,
+            useCount: 10,
+            stateChangedAt: now,
+          },
+          {
+            skillId: 'skill-2',
+            skillName: 'React Component Creator',
+            lastUsedAt: now,
+            state: 'active',
+            pinned: false,
+            useCount: 5,
+            stateChangedAt: now,
+          },
+        ],
+        lastUpdated: now,
+      }), 'utf-8')
+
+      const result = runCuratorReview()
+
+      expect(result.success).toBe(true)
+      // Either duplicates or similar should be detected
+      const totalIssues = (result.data?.summary.duplicateCount ?? 0) + (result.data?.summary.similarCount ?? 0)
+      expect(totalIssues).toBeGreaterThan(0)
+    })
+
+    it('should detect potentially obsolete archived skills', () => {
+      const oldTimestamp = Date.now() - 120 * 86_400_000 // 120 days ago
+
+      writeFileSync(USAGE_PATH, JSON.stringify({
+        version: '1.0.0',
+        skills: [
+          {
+            skillId: 'old-skill',
+            skillName: 'Deprecated Skill',
+            lastUsedAt: oldTimestamp,
+            state: 'archived',
+            pinned: false,
+            useCount: 2,
+            stateChangedAt: oldTimestamp,
+          },
+        ],
+        lastUpdated: Date.now(),
+      }), 'utf-8')
+
+      const result = runCuratorReview()
+
+      expect(result.success).toBe(true)
+      expect(result.data?.summary.obsoleteCount).toBe(1)
+      expect(result.data?.potentiallyObsolete[0].skillId).toBe('old-skill')
+      expect(result.data?.potentiallyObsolete[0].state).toBe('archived')
+    })
+
+    it('should detect stale skills with low usage as obsolete', () => {
+      const oldTimestamp = Date.now() - 70 * 86_400_000 // 70 days ago
+
+      writeFileSync(USAGE_PATH, JSON.stringify({
+        version: '1.0.0',
+        skills: [
+          {
+            skillId: 'unused-skill',
+            skillName: 'Unused Skill',
+            lastUsedAt: oldTimestamp,
+            state: 'stale',
+            pinned: false,
+            useCount: 2, // Low usage
+            stateChangedAt: oldTimestamp,
+          },
+        ],
+        lastUpdated: Date.now(),
+      }), 'utf-8')
+
+      const result = runCuratorReview()
+
+      expect(result.success).toBe(true)
+      expect(result.data?.summary.obsoleteCount).toBe(1)
+      expect(result.data?.potentiallyObsolete[0].skillId).toBe('unused-skill')
+    })
+
+    it('should not flag active skills with recent use as obsolete', () => {
+      const recentTimestamp = Date.now() - 10 * 86_400_000 // 10 days ago
+
+      writeFileSync(USAGE_PATH, JSON.stringify({
+        version: '1.0.0',
+        skills: [
+          {
+            skillId: 'active-skill',
+            skillName: 'Active Skill',
+            lastUsedAt: recentTimestamp,
+            state: 'active',
+            pinned: false,
+            useCount: 50,
+            stateChangedAt: recentTimestamp,
+          },
+        ],
+        lastUpdated: Date.now(),
+      }), 'utf-8')
+
+      const result = runCuratorReview()
+
+      expect(result.success).toBe(true)
+      expect(result.data?.summary.obsoleteCount).toBe(0)
+    })
+
+    it('should skip pinned skills in obsolete detection', () => {
+      const oldTimestamp = Date.now() - 100 * 86_400_000 // 100 days ago
+
+      writeFileSync(USAGE_PATH, JSON.stringify({
+        version: '1.0.0',
+        skills: [
+          {
+            skillId: 'pinned-old-skill',
+            skillName: 'Pinned Old Skill',
+            lastUsedAt: oldTimestamp,
+            state: 'archived',
+            pinned: true, // Pinned - should be skipped
+            useCount: 1,
+            stateChangedAt: oldTimestamp,
+          },
+        ],
+        lastUpdated: Date.now(),
+      }), 'utf-8')
+
+      const result = runCuratorReview()
+
+      expect(result.success).toBe(true)
+      // Pinned archived skill should not be flagged as obsolete
+      expect(result.data?.potentiallyObsolete.length).toBe(0)
+    })
+  })
+
+  describe('loadCuratorReview', () => {
+    const REVIEW_PATH = join(TEST_DIR, 'curator-review.json')
+
+    it('should return null when no review exists', () => {
+      // Make sure no review file exists
+      if (existsSync(REVIEW_PATH)) {
+        rmSync(REVIEW_PATH)
+      }
+
+      const result = loadCuratorReview()
+      expect(result).toBe(null)
+    })
+
+    it('should load existing review report', () => {
+      // First generate a review
+      runCuratorReview()
+
+      const result = loadCuratorReview()
+
+      expect(result).not.toBe(null)
+      expect(result?.version).toBe('1.0.0')
+      expect(result?.generatedAt).toBeDefined()
     })
   })
 })

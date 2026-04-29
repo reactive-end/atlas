@@ -19,6 +19,7 @@ export interface CuratorConfig {
   staleAfterDays?: number
   archiveAfterDays?: number
   autoArchive?: boolean
+  reviewEnabled?: boolean
 }
 
 // CandidatesConfig for Phase 3 skill candidate detection
@@ -237,6 +238,7 @@ export const DEFAULT_CONFIG: AtlasConfig = {
       staleAfterDays: 30,
       archiveAfterDays: 90,
       autoArchive: false,
+      reviewEnabled: false,
     },
   },
 }
