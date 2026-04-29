@@ -5,6 +5,20 @@ import type { CodexConfig } from '@/modules/codex/types'
 export interface SkillsConfig {
   enabled: boolean
   basePath?: string
+  curator?: {
+    enabled: boolean
+    staleAfterDays?: number
+    archiveAfterDays?: number
+    autoArchive?: boolean
+  }
+}
+
+// CuratorConfig for Phase 4 lifecycle management
+export interface CuratorConfig {
+  enabled: boolean
+  staleAfterDays?: number
+  archiveAfterDays?: number
+  autoArchive?: boolean
 }
 
 // CandidatesConfig for Phase 3 skill candidate detection
@@ -62,6 +76,7 @@ export interface AthenaConfig {
   enabled: boolean
   skills: SkillsConfig
   candidates: CandidatesConfig
+  curator: CuratorConfig
 }
 
 export interface AtlasConfig {
@@ -216,6 +231,12 @@ export const DEFAULT_CONFIG: AtlasConfig = {
       maxCandidates: 50,
       expireAfterDays: 30,
       minConfidence: 60,
+    },
+    curator: {
+      enabled: false,
+      staleAfterDays: 30,
+      archiveAfterDays: 90,
+      autoArchive: false,
     },
   },
 }

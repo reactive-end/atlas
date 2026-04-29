@@ -43,7 +43,10 @@ import {
   persistCandidates,
   recordToolExecution,
   handleListCandidates,
-} from '@atlas-Opencode/core'
+  runSkillsCurator as runCuratorSkill,
+  getSkillsCuratorStatus as getCuratorStatusSkill,
+  setSkillsCuratorPaused as setCuratorPaused,
+} from '@atlas-opencode/core'
 
 type AtlasPluginState = {
   echoLevel: 'lite' | 'full' | 'ultra'
@@ -565,6 +568,37 @@ const atlasPlugin: Plugin = async (input: PluginInput, _options?: PluginOptions)
                 athenaConfig.skills,
                 paths,
               )
+              return result.content
+            },
+          }),
+          athena_curator_status: tool({
+            description: 'Get curator status including paused state, skill counts, and statistics.',
+            args: {},
+            async execute() {
+              const result = getCuratorStatusSkill()
+              return result.content
+            },
+          }),
+          athena_curator_run: tool({
+            description: 'Run curator to evaluate skills and apply lifecycle transitions.',
+            args: {
+              dry_run: tool.schema.boolean().describe('Run without applying changes').optional(),
+            },
+            async execute(args) {
+              const result = runCuratorSkill(
+                config.athena?.curator,
+                args.dry_run,
+              )
+              return result.content
+            },
+          }),
+          athena_curator_pause: tool({
+            description: 'Toggle curator pause state. Use true to pause, false to resume.',
+            args: {
+              paused: tool.schema.boolean().describe('Pause state: true to pause, false to resume'),
+            },
+            async execute(args) {
+              const result = setCuratorPaused(args.paused)
               return result.content
             },
           }),
