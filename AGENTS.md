@@ -6,12 +6,14 @@ This file provides context to coding agents (Cursor, Windsurf, Copilot, etc.) to
 
 ## What is Atlas
 
-Atlas is a plugin for OpenCode CLI that optimizes token consumption in interactions with LLMs through four coordinated modules:
+Atlas is a plugin for OpenCode CLI that optimizes token consumption in interactions with LLMs through six coordinated modules:
 
 - **Echo** — Model output compression (3 levels: lite, full, ultra)
-- **Agents** — 19 specialized agents with dual echo/verbose prompts
+- **Agents** — 19 specialized agents with dual echo/verbose prompts and SDD workflow
 - **Forge** — Compression pipeline for bash command output
 - **Vault** — Persistent memory between sessions via embedded SQLite
+- **Codex** — Repository indexing, dependency graph, and fuzzy search
+- **Athena** — Autonomous skill learning, candidate detection, and curator lifecycle
 
 ## Project Structure
 
@@ -21,7 +23,7 @@ packages/core/
 │   ├── types.ts                          # Central plugin types (AgentName union, hooks interfaces)
 │   ├── index.ts                          # Public exports for @atlas-opencode/core
 │   ├── config/
-│   │   ├── schema.ts                     # Configuration schema, defaults, and 4 agent presets
+│   │   ├── schema.ts                     # Configuration schema, defaults, and dynamic buildPreset
 │   │   └── loader.ts                     # Load and deep-merge atlas.config.json
 │   ├── modules/
 │   │   ├── echo/
@@ -31,8 +33,8 @@ packages/core/
 │   │   │   └── commands.ts               # Handlers for /atlas-echo and /atlas-verbose
 │   │   ├── agents/
 │   │   │   ├── registry.ts               # AGENT_FACTORIES + ALL_AGENT_NAMES + AGENT_ALIASES
-│   │   │   ├── agents.test.ts            # Consolidated tests for all 18 agents
-│   │   │   ├── atlas.ts                  # Orchestrator — mandatory delegation to specialists
+│   │   │   ├── agents.test.ts            # Consolidated tests for all 19 agents
+│   │   │   ├── atlas.ts                  # Orchestrator — SDD workflow, mandatory delegation
 │   │   │   ├── pathfinder.ts             # @tracker — codebase search and file discovery
 │   │   │   ├── archivist.ts              # @keeper — external docs and API research
 │   │   │   ├── elder.ts                  # @sage — architecture, strategy, complex decisions
@@ -52,23 +54,50 @@ packages/core/
 │   │   │   ├── tactician.ts              # @tester — test strategy and coverage architecture
 │   │   │   └── squire.ts                 # @runner — quick verification and simple checks
 │   │   ├── forge/
+│   │   │   ├── hash.ts                   # Shared FNV-1a hash (used by redundancy + read-cache)
 │   │   │   ├── filters.ts                # ANSI, timestamps, progress bar cleanup
 │   │   │   ├── dedup.ts                  # Deduplication of repeated lines
 │   │   │   ├── redundancy.ts             # Similarity cache (Jaccard + FNV1a)
-│   │   │   ├── markdown.ts               # Prose compression in markdown
+│   │   │   ├── markdown.ts               # Prose compression in markdown (pre-compiled regex)
 │   │   │   ├── compressor.ts             # Complete compression pipeline
+│   │   │   ├── error-compressor.ts       # Groups repetitive TS/ESLint errors
+│   │   │   ├── diff-cache.ts             # Caches command outputs, returns only diffs
+│   │   │   ├── read-cache.ts             # Caches file reads, summaries for unchanged re-reads
 │   │   │   └── bash-wrapper.ts           # Hook to intercept bash tools
-│   │   └── vault/
-│   │       ├── schema.ts                 # SQLite DDL: tables, indexes, FTS5, triggers
-│   │       ├── database.ts               # Embedded bun:sqlite adapter
-│   │       ├── client.ts                 # SQLite operations (search, save, timeline)
-│   │       ├── session-manager.ts        # Session lifecycle management
-│   │       ├── memory-protocol.ts        # Vault protocol prompts injected to all agents
-│   │       └── compaction.ts             # Context preservation across compaction events
+│   │   ├── vault/
+│   │   │   ├── schema.ts                 # SQLite DDL: tables, indexes, FTS5, triggers
+│   │   │   ├── database.ts               # Embedded bun:sqlite adapter
+│   │   │   ├── client.ts                 # SQLite operations (search, save, timeline, saveMemory)
+│   │   │   ├── session-manager.ts        # Session lifecycle management
+│   │   │   ├── memory-protocol.ts        # Vault protocol prompts injected to all agents
+│   │   │   ├── tool-handlers.ts          # mem_search, mem_save, mem_timeline handlers
+│   │   │   └── compaction.ts             # Context preservation across compaction events
+│   │   ├── codex/
+│   │   │   ├── codex.ts                  # Main indexing pipeline + graph generation
+│   │   │   ├── analyzer.ts               # File analysis: imports, exports, file type detection
+│   │   │   ├── writer.ts                 # Writes .atlas/index.md with dependency metadata
+│   │   │   ├── tracker.ts                # Parses index.md back into IndexedFile[]
+│   │   │   ├── graph-builder.ts          # Builds directed dependency graph from index data
+│   │   │   ├── graph-renderer.ts         # Generates interactive .atlas/graph.html (D3 force)
+│   │   │   ├── tool-handlers.ts          # codex_search with fuzzy multi-factor scoring
+│   │   │   ├── prompt.ts                 # System prompt injection with directory grouping
+│   │   │   ├── initializer.ts            # Staleness check and auto-reindex on session start
+│   │   │   └── types.ts                  # IndexedFile, GraphNode, GraphEdge, DependencyGraph
+│   │   └── athena/
+│   │       ├── skills/
+│   │       │   ├── storage.ts            # Skill manifest CRUD, filesystem operations
+│   │       │   ├── tool-handlers.ts      # athena_list_skills, athena_view_skill, athena_manage_skill
+│   │       │   ├── curator.ts            # Skill lifecycle: stale detection, archiving, review
+│   │       │   ├── stats.ts              # Unified Athena telemetry (skills + candidates + curator)
+│   │       │   └── types.ts              # SkillDefinition, SkillManifest, SkillsStoragePaths
+│   │       └── candidates/
+│   │           ├── detector.ts           # Tool usage pattern analysis and candidate detection
+│   │           ├── storage.ts            # Candidates manifest CRUD, session tracking
+│   │           └── types.ts              # SkillCandidate, CandidatesManifest, CandidateEvidence
 │   └── hooks/
 │       ├── system-transform.ts           # Injects echo + agent prompt + vault per agent call
 │       ├── tool-before.ts                # Tool pre-processing (Forge intercept)
-│       ├── tool-after.ts                 # Passive post-tool capture (Vault)
+│       ├── tool-after.ts                 # Passive post-tool capture (Vault + Candidates)
 │       ├── compacting.ts                 # Vault checkpoint on context compaction
 │       ├── event-handler.ts              # Session lifecycle events
 │       └── integration.test.ts           # Inter-module integration tests
@@ -125,6 +154,7 @@ export function createNameAgent(
 - Echo prompt: terse, directive, structured output format
 - Verbose prompt: full context, methodology, boundaries, Vault usage note
 - Both prompts define what the agent handles and what it delegates
+- Atlas orchestrator uses SDD triage: trivial → immediate, moderate → brief plan, complex → full specification protocol
 
 ### Registry
 
@@ -169,15 +199,15 @@ export function createNameAgent(
 | `experimental.session.compacting` | Vault preserves context when compacting |
 | `event` | Session lifecycle — clean up state on session deletion |
 | `chat.message` | Vault records user messages, handles TUI commands |
-| `config` | Registers all 18 agents in OpenCode's agent config |
+| `config` | Registers all 19 agents in OpenCode's agent config |
 
 ## Configuration
 
 - File: `~/.config/opencode/atlas.config.json`
 - Defaults in `src/config/schema.ts` → `DEFAULT_CONFIG`
 - Loader in `src/config/loader.ts` does deep merge with defaults
-- 4 presets: `default`, `performance`, `economy`, `premium`
-- Adding a new agent requires updating: `types.ts`, `schema.ts` (all 4 presets), `registry.ts`, `index.ts`
+- 4 presets: `default`, `performance`, `economy`, `premium` (generated via `buildPreset()` helper)
+- Adding a new agent requires updating: `types.ts`, `buildPreset()` agent list in `schema.ts`, `registry.ts`, `index.ts`
 
 ## New Forge Modules (v1.1.0+)
 
@@ -197,15 +227,19 @@ npm run typecheck     # Check types
 npm run check         # typecheck + tests (CI)
 ```
 
-21 test files, 387+ tests covering:
+28 test files, 479+ tests covering:
 - Echo levels and prompt builder
 - Auto-clarity (critical context detection)
 - TUI commands
-- All Forge filters (ANSI, dedup, redundancy, markdown, compressor)
+- All Forge filters (ANSI, dedup, redundancy, markdown, compressor, error-compressor, diff-cache, read-cache)
 - Vault schema DDL (tables, indexes, FTS5, triggers)
 - Vault database path and initialization
+- Vault memory persistence (vaultSaveMemory + FTS5 indexing)
 - Memory protocol and private tags
 - Config loader and defaults
 - System transform hook
-- All 18 agent definitions, dual prompts, and specializations
+- All 19 agent definitions, dual prompts, SDD workflow, and specializations
+- Athena skills storage, tool handlers, curator lifecycle, stats
+- Athena candidates detector, storage, session tracking
+- Codex indexing, analyzer, dependency graph, search scoring
 - Inter-module integration

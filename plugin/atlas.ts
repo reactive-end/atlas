@@ -16,7 +16,7 @@ import {
   handleEchoCommand,
   handleVerboseCommand,
   ensureSession,
-  vaultSaveObservation,
+  vaultSaveMemory,
   stripPrivateTags,
   buildEchoPrompt,
   buildDisabledPrompt,
@@ -364,7 +364,7 @@ const atlasPlugin: Plugin = async (input: PluginInput, _options?: PluginOptions)
           const content = config.vault.stripPrivateTags
             ? stripPrivateTags(text)
             : text
-          vaultSaveObservation(sessionID, `[User] ${content}`, 'user-prompt')
+          vaultSaveMemory(sessionID, `[User] ${content}`, 'user-prompt', 0.4)
           sessionState.stats.vaultSaved++
           
           // Send fun feedback message occasionally (every 5 messages)

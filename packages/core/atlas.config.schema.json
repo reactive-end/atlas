@@ -63,7 +63,7 @@
           "additionalProperties": {
             "type": "object",
             "patternProperties": {
-              "^(atlas|pathfinder|archivist|elder|artisan|mender|tribunal|inspector|scribe|curator|sentinel|herald|lorekeeper|alchemist|magistrate|envoy|quartermaster|tactician)$": {
+              "^(atlas|pathfinder|archivist|elder|artisan|mender|tribunal|inspector|scribe|curator|sentinel|herald|lorekeeper|alchemist|magistrate|envoy|quartermaster|tactician|squire)$": {
                 "type": "object",
                 "properties": {
                   "model": {
@@ -217,6 +217,106 @@
           "type": "boolean",
           "default": true,
           "description": "Automatically re-index repository on startup"
+        }
+      },
+      "additionalProperties": false
+    },
+    "athena": {
+      "type": "object",
+      "description": "Autonomous learning engine — skills registry, candidate detection, and curator lifecycle",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable Athena module for skill management"
+        },
+        "skills": {
+          "type": "object",
+          "description": "Skills registry configuration",
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "default": true,
+              "description": "Enable skills registry"
+            },
+            "basePath": {
+              "type": ["string", "null"],
+              "default": null,
+              "description": "Override skills storage path (default: ~/.athena)"
+            }
+          },
+          "additionalProperties": false
+        },
+        "candidates": {
+          "type": "object",
+          "description": "Automatic candidate detection for skill promotion",
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "default": false,
+              "description": "Enable candidate detection (watches tool usage patterns)"
+            },
+            "minToolCalls": {
+              "type": "number",
+              "minimum": 1,
+              "default": 5,
+              "description": "Minimum tool calls before candidate detection triggers"
+            },
+            "maxCandidates": {
+              "type": "number",
+              "minimum": 1,
+              "default": 50,
+              "description": "Maximum number of candidates to keep in manifest"
+            },
+            "expireAfterDays": {
+              "type": "number",
+              "minimum": 1,
+              "default": 30,
+              "description": "Expire candidates older than N days"
+            },
+            "minConfidence": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 100,
+              "default": 60,
+              "description": "Minimum confidence score (0-100) to surface a candidate"
+            }
+          },
+          "additionalProperties": false
+        },
+        "curator": {
+          "type": "object",
+          "description": "Skill lifecycle manager — stale detection, archiving, review",
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "default": false,
+              "description": "Enable curator lifecycle management"
+            },
+            "staleAfterDays": {
+              "type": "number",
+              "minimum": 1,
+              "default": 30,
+              "description": "Days of inactivity before a skill is considered stale"
+            },
+            "archiveAfterDays": {
+              "type": "number",
+              "minimum": 1,
+              "default": 90,
+              "description": "Days of inactivity before automatic archiving"
+            },
+            "autoArchive": {
+              "type": "boolean",
+              "default": false,
+              "description": "Automatically archive stale skills"
+            },
+            "reviewEnabled": {
+              "type": "boolean",
+              "default": false,
+              "description": "Enable heuristic consolidation reviews"
+            }
+          },
+          "additionalProperties": false
         }
       },
       "additionalProperties": false

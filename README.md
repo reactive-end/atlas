@@ -6,11 +6,11 @@
   <em>Atlas — Token optimizer plugin for OpenCode CLI</em>
 </p>
 
-Atlas is a plugin for OpenCode that reduces LLM token consumption through four coordinated modules: output compression, bash output compression, persistent session memory, and a suite of 19 specialized agents that delegate work efficiently instead of handling everything through a single generalist context.
+Atlas is a plugin for OpenCode that reduces LLM token consumption through six coordinated modules: output compression, bash output compression, persistent session memory, repository indexing, autonomous skill learning, and a suite of 19 specialized agents that delegate work efficiently instead of handling everything through a single generalist context.
 
 **The problem:** Every token counts when you're chatting with AI all day. Those "Sure, I'd be happy to help!" pleasantries add up fast. That `npm install` output with 500 lines of progress bars? Pure token waste. And asking the model to re-explain your architecture for the 47th time? Criminal.
 
-**The solution:** Four modules working together like a well-oiled token-saving machine. Echo makes responses terse (think caveman, but technically precise). Forge compresses bash output faster than you can say "deprecated dependency warning". Vault remembers everything so you never re-explain your project again. And the 19 specialized agents? They each handle exactly one thing and delegate everything else — no generalist writing essays to themselves.
+**The solution:** Six modules working together like a well-oiled token-saving machine. Echo makes responses terse (think caveman, but technically precise). Forge compresses bash output faster than you can say "deprecated dependency warning". Vault remembers everything so you never re-explain your project again. Codex maps your entire repo so agents know where everything lives without asking. Athena watches your patterns and learns reusable skills. And the 19 specialized agents? They each handle exactly one thing and delegate everything else — no generalist writing essays to themselves.
 
 > **Fun fact:** If Atlas had existed in 2023, it could have saved enough tokens to write War and Peace... approximately 12,847 times. I did the math. (Okay, it was an estimate. But it sounds impressive!)
 
@@ -41,7 +41,7 @@ Auto-Clarity detects critical contexts (security, irreversible operations) and a
 
 ### Agents
 
-19 specialized agents with dual prompts (echo/verbose). Each agent has a focused role and knows its exact boundaries — when to handle a task and when to delegate. Atlas orchestrates, subagents execute.
+19 specialized agents with dual prompts (echo/verbose). Each agent has a focused role and knows its exact boundaries — when to handle a task and when to delegate. Atlas orchestrates using **Specification-Driven Development (SDD)** — it triages by complexity, asks probing questions on complex tasks, and proposes implementation plans before touching code. No more blind code generation.
 
 **Orchestration**
 
@@ -133,6 +133,8 @@ How it works:
 - The index is Markdown-plain and compact: ~15 tokens per file on disk
 
 It's like having a librarian who has already read every book and can tell you exactly which shelf to check. Pathfinder still does the deep digging, but Codex tells him where to start.
+
+**New in 1.3.0:** Codex now extracts import/export relationships, classifies files into semantic types (component, service, hook, etc.), and builds a full dependency graph. Run `codex_reindex` and open `.atlas/graph.html` for an interactive force-directed visualization of your entire codebase — hover to highlight connections, click for details, search by name or export. It's the map you always wished you had.
 
 ## TUI Commands
 
