@@ -3,21 +3,21 @@
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import type { AtlasConfig } from '@/config/schema'
-import { buildAthenaStats, formatAthenaStats, getStatsSummary } from '@/modules/skills/stats'
+import { buildAthenaStats, formatAthenaStats, getStatsSummary } from '@/modules/athena/skills/stats'
 
 // Mock curator module
-vi.mock('@/modules/skills/curator', () => ({
+vi.mock('@/modules/athena/skills/curator', () => ({
   loadCuratorState: vi.fn(),
   loadUsageData: vi.fn(),
 }))
 
 // Mock candidates storage
-vi.mock('@/modules/candidates/storage', () => ({
+vi.mock('@/modules/athena/candidates/storage', () => ({
   loadCandidatesManifest: vi.fn(),
 }))
 
-import { loadCuratorState, loadUsageData } from '@/modules/skills/curator'
-import { loadCandidatesManifest } from '@/modules/candidates/storage'
+import { loadCuratorState, loadUsageData } from '@/modules/athena/skills/curator'
+import { loadCandidatesManifest } from '@/modules/athena/candidates/storage'
 
 describe('buildAthenaStats', () => {
   beforeEach(() => {

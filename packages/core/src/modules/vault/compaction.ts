@@ -25,7 +25,7 @@ function saveCompactionCheckpoint(
 function fetchPreviousContext(
   sessionId: string,
 ): string {
-  const results = vaultSearch(`session:${sessionId}`, 5)
+  const results = vaultSearch(sessionId, 5)
 
   if (!results.success || results.data.length === 0) {
     return ''

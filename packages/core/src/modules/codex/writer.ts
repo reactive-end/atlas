@@ -27,8 +27,16 @@ export function writeIndexMd(
 
   for (const file of files) {
     const exportsStr = file.exports.join(', ')
+    const importsStr = file.imports
+      .map(i => `${i.source}(${i.symbols.join(',')})`)
+      .join(' | ')
+
     lines.push(`# ${file.path}`)
+    lines.push(`type: ${file.fileType}`)
     lines.push(`exports: ${exportsStr}`)
+    if (importsStr) {
+      lines.push(`imports: ${importsStr}`)
+    }
     lines.push(file.description)
     lines.push('')
   }

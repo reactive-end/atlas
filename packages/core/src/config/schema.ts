@@ -89,6 +89,34 @@ export interface AtlasConfig {
   athena: AthenaConfig
 }
 
+const MCP_AGENTS: ReadonlySet<string> = new Set(['archivist'])
+const MCP_LIST: string[] = ['websearch', 'grep_app']
+
+function buildPreset(
+  defaultModel: string,
+  overrides?: Partial<Record<string, string>>,
+): AgentPresetsMap {
+  const agentNames = [
+    'atlas', 'pathfinder', 'archivist', 'elder', 'artisan',
+    'mender', 'tribunal', 'inspector', 'scribe', 'curator',
+    'sentinel', 'herald', 'lorekeeper', 'alchemist', 'magistrate',
+    'envoy', 'quartermaster', 'tactician', 'squire',
+  ]
+  const preset: AgentPresetsMap = {}
+  for (const name of agentNames) {
+    preset[name] = {
+      model: overrides?.[name] ?? defaultModel,
+      skills: ['*'],
+      mcps: MCP_AGENTS.has(name) ? MCP_LIST : [],
+    }
+  }
+  return preset
+}
+
+const MINI = 'openai/gpt-5.4-mini'
+const FULL = 'openai/gpt-5.4'
+const OPUS = 'anthropic/claude-opus-4.6'
+
 export const DEFAULT_CONFIG: AtlasConfig = {
   echo: {
     enabled: true,
@@ -101,90 +129,14 @@ export const DEFAULT_CONFIG: AtlasConfig = {
     defaultMode: 'echo',
     forceEchoOnAll: true,
     presets: {
-      default: {
-        atlas: { model: 'openai/gpt-5.4', skills: ['*'], mcps: [] },
-        pathfinder: { model: 'openai/gpt-5.4-mini', skills: ['*'], mcps: [] },
-        archivist: { model: 'openai/gpt-5.4-mini', skills: ['*'], mcps: ['websearch', 'grep_app'] },
-        elder: { model: 'openai/gpt-5.4', skills: ['*'], mcps: [] },
-        artisan: { model: 'openai/gpt-5.4-mini', skills: ['*'], mcps: [] },
-        mender: { model: 'openai/gpt-5.4-mini', skills: ['*'], mcps: [] },
-        tribunal: { model: 'openai/gpt-5.4', skills: ['*'], mcps: [] },
-        inspector: { model: 'openai/gpt-5.4-mini', skills: ['*'], mcps: [] },
-        scribe: { model: 'openai/gpt-5.4-mini', skills: ['*'], mcps: [] },
-        curator: { model: 'openai/gpt-5.4', skills: ['*'], mcps: [] },
-        sentinel: { model: 'openai/gpt-5.4', skills: ['*'], mcps: [] },
-        herald: { model: 'openai/gpt-5.4-mini', skills: ['*'], mcps: [] },
-        lorekeeper: { model: 'openai/gpt-5.4', skills: ['*'], mcps: [] },
-        alchemist: { model: 'openai/gpt-5.4', skills: ['*'], mcps: [] },
-        magistrate: { model: 'openai/gpt-5.4', skills: ['*'], mcps: [] },
-        envoy: { model: 'openai/gpt-5.4', skills: ['*'], mcps: [] },
-        quartermaster: { model: 'openai/gpt-5.4-mini', skills: ['*'], mcps: [] },
-        tactician: { model: 'openai/gpt-5.4', skills: ['*'], mcps: [] },
-        squire: { model: 'openai/gpt-5.4-mini', skills: ['*'], mcps: [] },
-      },
-      performance: {
-        atlas: { model: 'openai/gpt-5.4', skills: ['*'], mcps: [] },
-        pathfinder: { model: 'openai/gpt-5.4', skills: ['*'], mcps: [] },
-        archivist: { model: 'openai/gpt-5.4', skills: ['*'], mcps: ['websearch', 'grep_app'] },
-        elder: { model: 'openai/gpt-5.4', skills: ['*'], mcps: [] },
-        artisan: { model: 'openai/gpt-5.4', skills: ['*'], mcps: [] },
-        mender: { model: 'openai/gpt-5.4', skills: ['*'], mcps: [] },
-        tribunal: { model: 'openai/gpt-5.4', skills: ['*'], mcps: [] },
-        inspector: { model: 'openai/gpt-5.4', skills: ['*'], mcps: [] },
-        scribe: { model: 'openai/gpt-5.4', skills: ['*'], mcps: [] },
-        curator: { model: 'openai/gpt-5.4', skills: ['*'], mcps: [] },
-        sentinel: { model: 'openai/gpt-5.4', skills: ['*'], mcps: [] },
-        herald: { model: 'openai/gpt-5.4', skills: ['*'], mcps: [] },
-        lorekeeper: { model: 'openai/gpt-5.4', skills: ['*'], mcps: [] },
-        alchemist: { model: 'openai/gpt-5.4', skills: ['*'], mcps: [] },
-        magistrate: { model: 'openai/gpt-5.4', skills: ['*'], mcps: [] },
-        envoy: { model: 'openai/gpt-5.4', skills: ['*'], mcps: [] },
-        quartermaster: { model: 'openai/gpt-5.4', skills: ['*'], mcps: [] },
-        tactician: { model: 'openai/gpt-5.4', skills: ['*'], mcps: [] },
-        squire: { model: 'openai/gpt-5.4-mini', skills: ['*'], mcps: [] },
-      },
-      economy: {
-        atlas: { model: 'openai/gpt-5.4-mini', skills: ['*'], mcps: [] },
-        pathfinder: { model: 'openai/gpt-5.4-mini', skills: ['*'], mcps: [] },
-        archivist: { model: 'openai/gpt-5.4-mini', skills: ['*'], mcps: [] },
-        elder: { model: 'openai/gpt-5.4-mini', skills: ['*'], mcps: [] },
-        artisan: { model: 'openai/gpt-5.4-mini', skills: ['*'], mcps: [] },
-        mender: { model: 'openai/gpt-5.4-mini', skills: ['*'], mcps: [] },
-        tribunal: { model: 'openai/gpt-5.4-mini', skills: ['*'], mcps: [] },
-        inspector: { model: 'openai/gpt-5.4-mini', skills: ['*'], mcps: [] },
-        scribe: { model: 'openai/gpt-5.4-mini', skills: ['*'], mcps: [] },
-        curator: { model: 'openai/gpt-5.4-mini', skills: ['*'], mcps: [] },
-        sentinel: { model: 'openai/gpt-5.4-mini', skills: ['*'], mcps: [] },
-        herald: { model: 'openai/gpt-5.4-mini', skills: ['*'], mcps: [] },
-        lorekeeper: { model: 'openai/gpt-5.4-mini', skills: ['*'], mcps: [] },
-        alchemist: { model: 'openai/gpt-5.4-mini', skills: ['*'], mcps: [] },
-        magistrate: { model: 'openai/gpt-5.4-mini', skills: ['*'], mcps: [] },
-        envoy: { model: 'openai/gpt-5.4-mini', skills: ['*'], mcps: [] },
-        quartermaster: { model: 'openai/gpt-5.4-mini', skills: ['*'], mcps: [] },
-        tactician: { model: 'openai/gpt-5.4-mini', skills: ['*'], mcps: [] },
-        squire: { model: 'openai/gpt-5.4-mini', skills: ['*'], mcps: [] },
-      },
-      premium: {
-        atlas: { model: 'anthropic/claude-opus-4.6', skills: ['*'], mcps: [] },
-        pathfinder: { model: 'anthropic/claude-opus-4.6', skills: ['*'], mcps: [] },
-        archivist: { model: 'anthropic/claude-opus-4.6', skills: ['*'], mcps: ['websearch', 'grep_app'] },
-        elder: { model: 'anthropic/claude-opus-4.6', skills: ['*'], mcps: [] },
-        artisan: { model: 'anthropic/claude-opus-4.6', skills: ['*'], mcps: [] },
-        mender: { model: 'anthropic/claude-opus-4.6', skills: ['*'], mcps: [] },
-        tribunal: { model: 'anthropic/claude-opus-4.6', skills: ['*'], mcps: [] },
-        inspector: { model: 'anthropic/claude-opus-4.6', skills: ['*'], mcps: [] },
-        scribe: { model: 'anthropic/claude-opus-4.6', skills: ['*'], mcps: [] },
-        curator: { model: 'anthropic/claude-opus-4.6', skills: ['*'], mcps: [] },
-        sentinel: { model: 'anthropic/claude-opus-4.6', skills: ['*'], mcps: [] },
-        herald: { model: 'anthropic/claude-opus-4.6', skills: ['*'], mcps: [] },
-        lorekeeper: { model: 'anthropic/claude-opus-4.6', skills: ['*'], mcps: [] },
-        alchemist: { model: 'anthropic/claude-opus-4.6', skills: ['*'], mcps: [] },
-        magistrate: { model: 'anthropic/claude-opus-4.6', skills: ['*'], mcps: [] },
-        envoy: { model: 'anthropic/claude-opus-4.6', skills: ['*'], mcps: [] },
-        quartermaster: { model: 'anthropic/claude-opus-4.6', skills: ['*'], mcps: [] },
-        tactician: { model: 'anthropic/claude-opus-4.6', skills: ['*'], mcps: [] },
-        squire: { model: 'openai/gpt-5.4-mini', skills: ['*'], mcps: [] },
-      },
+      default: buildPreset(FULL, {
+        pathfinder: MINI, archivist: MINI, artisan: MINI,
+        mender: MINI, inspector: MINI, scribe: MINI,
+        herald: MINI, quartermaster: MINI, squire: MINI,
+      }),
+      performance: buildPreset(FULL, { squire: MINI }),
+      economy: buildPreset(MINI),
+      premium: buildPreset(OPUS, { squire: MINI }),
     },
   },
   forge: {

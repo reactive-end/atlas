@@ -4,11 +4,11 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 import {
   analyzeToolExecution,
   isCandidatesEnabled,
-} from '@/modules/candidates/detector'
+} from '@/modules/athena/candidates/detector'
 
 
 
-vi.mock('@/modules/candidates/storage', () => ({
+vi.mock('@/modules/athena/candidates/storage', () => ({
   getSessionToolCallCount: vi.fn().mockReturnValue(0),
   incrementSessionToolCallCount: vi.fn().mockReturnValue(1),
   getOrCreateCandidatesManifest: vi.fn().mockReturnValue({
@@ -26,7 +26,7 @@ vi.mock('@/modules/candidates/storage', () => ({
 import {
   getSessionToolCallCount,
   incrementSessionToolCallCount,
-} from '@/modules/candidates/storage'
+} from '@/modules/athena/candidates/storage'
 
 
 

@@ -2,6 +2,8 @@ import type { CodexConfig, IndexStats, IndexedFile } from '@/modules/codex/types
 import { scanFiles, readExistingIndex, calculateDeltas } from '@/modules/codex/tracker'
 import { analyzeFile } from '@/modules/codex/analyzer'
 import { ensureAtlasDir, writeIndexMd } from '@/modules/codex/writer'
+import { buildDependencyGraph } from '@/modules/codex/graph-builder'
+import { writeGraphHtml } from '@/modules/codex/graph-renderer'
 import { join } from 'node:path'
 
 export function runCodexIndex(repoRoot: string, config: CodexConfig): IndexStats {
@@ -40,12 +42,19 @@ export function runCodexIndex(repoRoot: string, config: CodexConfig): IndexStats
 
   const allFiles = [...newFiles, ...unchangedFiles]
 
+  // Build dependency graph from all indexed files
+  const graph = buildDependencyGraph(allFiles)
+
   ensureAtlasDir(repoRoot)
   writeIndexMd(repoRoot, indexPath, allFiles)
+
+  // Generate interactive HTML visualization
+  writeGraphHtml(repoRoot, graph)
 
   return {
     indexed: allFiles.length,
     updated: newFiles.length,
     deleted: delta.deleted.length,
+    edges: graph.edges.length,
   }
 }

@@ -7,7 +7,7 @@ import {
   createDefaultManifest,
   getAthenaConfigDefaults,
   isSkillsEnabled,
-} from '@/modules/skills/storage'
+} from '@/modules/athena/skills/storage'
 import type { SkillsConfig } from '@/config/schema'
 
 describe('skills storage', () => {

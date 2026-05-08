@@ -47,9 +47,6 @@ function getAdaptiveLevel(
   }
 
   // Escalate compression as context fills up
-  if (contextUsagePercent > 80) {
-    return 'ultra'
-  }
   if (contextUsagePercent > 60) {
     return 'ultra'
   }

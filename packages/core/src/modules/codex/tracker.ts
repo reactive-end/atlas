@@ -1,6 +1,6 @@
 import { readFileSync, existsSync, readdirSync, statSync } from 'node:fs'
 import { join, relative } from 'node:path'
-import type { RepoIndex, IndexedFile, FileDelta } from '@/modules/codex/types'
+import type { RepoIndex, IndexedFile, FileDelta, ImportRef, FileType } from '@/modules/codex/types'
 
 export function readExistingIndex(indexPath: string): RepoIndex | null {
   if (!existsSync(indexPath)) {
@@ -66,8 +66,30 @@ export function parseIndexMarkdown(content: string): RepoIndex {
       ? exportsLineMatch[1].split(',').map(e => e.trim()).filter(Boolean)
       : []
 
+    // Parse imports line: "imports: source(sym1,sym2) | source2(sym3)"
+    const importsLineMatch = rest.match(/^imports:\s*(.+)/m)
+    const imports: ImportRef[] = []
+    if (importsLineMatch) {
+      const parts = importsLineMatch[1].split(' | ')
+      for (const part of parts) {
+        const impMatch = part.match(/^(.+?)\(([^)]*)\)$/)
+        if (impMatch) {
+          imports.push({
+            source: impMatch[1].trim(),
+            symbols: impMatch[2].split(',').map(s => s.trim()).filter(Boolean),
+          })
+        }
+      }
+    }
+
+    // Parse file type
+    const typeMatch = rest.match(/^type:\s*(\w+)/m)
+    const fileType = (typeMatch ? typeMatch[1] : 'module') as FileType
+
     let description = rest
       .replace(/^exports:.*$/m, '')
+      .replace(/^imports:.*$/m, '')
+      .replace(/^type:.*$/m, '')
       .replace(/^#.*$/gm, '')
       .replace(/^\s+/, '')
       .trim()
@@ -76,7 +98,7 @@ export function parseIndexMarkdown(content: string): RepoIndex {
       description = description.slice(0, 197) + '...'
     }
 
-    files.push({ path, exports, description })
+    files.push({ path, exports, imports, description, fileType })
   }
 
   return {
@@ -85,6 +107,7 @@ export function parseIndexMarkdown(content: string): RepoIndex {
     lastIndexedAt: lastIndexedAt || new Date().toISOString(),
     fileCount: files.length,
     files,
+    graph: { nodes: [], edges: [] },
   }
 }
 

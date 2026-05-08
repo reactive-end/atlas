@@ -11,7 +11,7 @@ vi.mock('@/modules/vault/client', () => ({
   vaultSearch: vi.fn(),
   vaultTimeline: vi.fn(),
   vaultGetObservation: vi.fn(),
-  vaultSaveObservation: vi.fn(),
+  vaultSaveMemory: vi.fn(),
 }))
 
 vi.mock('@/modules/vault/session-manager', () => ({
@@ -22,7 +22,7 @@ vi.mock('@/modules/vault/memory-protocol', () => ({
   stripPrivateTags: vi.fn((text: string) => text),
 }))
 
-import { vaultSearch, vaultTimeline, vaultGetObservation, vaultSaveObservation } from '@/modules/vault/client'
+import { vaultSearch, vaultTimeline, vaultGetObservation, vaultSaveMemory } from '@/modules/vault/client'
 import { ensureSession } from '@/modules/vault/session-manager'
 import { stripPrivateTags } from '@/modules/vault/memory-protocol'
 
@@ -32,14 +32,14 @@ describe('Tool Handlers', () => {
   })
 
   describe('handleMemSave', () => {
-    it('llama a ensureSession antes de vaultSaveObservation', async () => {
+    it('llama a ensureSession antes de vaultSaveMemory', async () => {
       const mockEnsure = ensureSession as ReturnType<typeof vi.fn>
-      const mockSave = vaultSaveObservation as ReturnType<typeof vi.fn>
+      const mockSave = vaultSaveMemory as ReturnType<typeof vi.fn>
 
       mockEnsure.mockReturnValue(true)
       mockSave.mockReturnValue({
         success: true,
-        data: { id: '1', content: 'test', category: 'test', createdAt: '2024-01-01', sessionId: 'session-1' },
+        data: { id: '1', title: 'test', content: 'test', memoryType: 'test', createdAt: '2024-01-01', sessionId: 'session-1' },
       })
 
       const result = handleMemSave('session-1', 'content', 'test', false)
@@ -60,14 +60,14 @@ describe('Tool Handlers', () => {
       expect(result.content).toContain('Failed to ensure session exists')
     })
 
-    it('retorna éxito si ensureSession y vaultSaveObservation funcionan', async () => {
+    it('retorna éxito si ensureSession y vaultSaveMemory funcionan', async () => {
       const mockEnsure = ensureSession as ReturnType<typeof vi.fn>
-      const mockSave = vaultSaveObservation as ReturnType<typeof vi.fn>
+      const mockSave = vaultSaveMemory as ReturnType<typeof vi.fn>
 
       mockEnsure.mockReturnValue(true)
       mockSave.mockReturnValue({
         success: true,
-        data: { id: '42', content: 'test', category: 'decision', createdAt: '2024-01-01', sessionId: 'session-1' },
+        data: { id: '42', title: 'test', content: 'test', memoryType: 'decision', createdAt: '2024-01-01', sessionId: 'session-1' },
       })
 
       const result = handleMemSave('session-1', 'content', 'decision', false)
@@ -79,13 +79,13 @@ describe('Tool Handlers', () => {
 
     it('aplica stripPrivateTags cuando stripPrivate es true', async () => {
       const mockEnsure = ensureSession as ReturnType<typeof vi.fn>
-      const mockSave = vaultSaveObservation as ReturnType<typeof vi.fn>
+      const mockSave = vaultSaveMemory as ReturnType<typeof vi.fn>
       const mockStrip = stripPrivateTags as ReturnType<typeof vi.fn>
 
       mockEnsure.mockReturnValue(true)
       mockSave.mockReturnValue({
         success: true,
-        data: { id: '1', content: 'sanitized', category: 'test', createdAt: '2024-01-01', sessionId: 'session-1' },
+        data: { id: '1', title: 'sanitized', content: 'sanitized', memoryType: 'test', createdAt: '2024-01-01', sessionId: 'session-1' },
       })
       mockStrip.mockImplementation((text: string) => `sanitized:${text}`)
 

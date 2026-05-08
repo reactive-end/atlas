@@ -172,6 +172,124 @@ export function vaultSaveObservation(
   })
 }
 
+export interface Memory {
+  id: string
+  title: string
+  content: string
+  memoryType: string
+  createdAt: string
+  sessionId: string
+}
+
+const CHUNK_SIZE = 500
+
+function chunkContent(text: string): string[] {
+  const words = text.split(/\s+/)
+  const chunks: string[] = []
+  let current: string[] = []
+  let currentLen = 0
+
+  for (const word of words) {
+    if (currentLen + word.length > CHUNK_SIZE && current.length > 0) {
+      chunks.push(current.join(' '))
+      current = []
+      currentLen = 0
+    }
+    current.push(word)
+    currentLen += word.length + 1
+  }
+
+  if (current.length > 0) {
+    chunks.push(current.join(' '))
+  }
+
+  return chunks.length > 0 ? chunks : [text]
+}
+
+function deriveTitle(content: string, category: string): string {
+  const firstLine = content.split('\n')[0].trim()
+  if (firstLine.length > 0 && firstLine.length <= 120) {
+    return firstLine
+  }
+  return `${category}: ${content.slice(0, 80).trim()}`
+}
+
+export function vaultSaveMemory(
+  sessionId: string,
+  content: string,
+  category: string,
+  importanceScore: number = 0.5,
+): VaultResponse<Memory> {
+  return wrapResult(() => {
+    const db = openDatabase()
+    const hash = contentHash(content)
+
+    // Dedup: skip if identical content already exists
+    const existing = db.prepare<{ id: number }>(
+      'SELECT id FROM vault_memories WHERE normalized_content = ? AND is_archived = 0 LIMIT 1'
+    ).get(hash)
+
+    if (existing) {
+      // Bump access count instead of duplicating
+      db.prepare(
+        "UPDATE vault_memories SET access_count = access_count + 1, last_accessed_at = datetime('now') WHERE id = ?"
+      ).run(existing.id)
+
+      return {
+        id: String(existing.id),
+        title: '',
+        content,
+        memoryType: category,
+        createdAt: new Date().toISOString(),
+        sessionId,
+      }
+    }
+
+    const title = deriveTitle(content, category)
+    const normalized = hash
+
+    const memResult = db.prepare(`
+      INSERT INTO vault_memories
+        (memory_type, title, content, summary, normalized_content, importance_score,
+         confidence_score, source_session_id, created_at, updated_at, last_accessed_at)
+      VALUES (?, ?, ?, ?, ?, ?, 1.0, ?, datetime('now'), datetime('now'), datetime('now'))
+    `).run(category, title, content, title, normalized, importanceScore, sessionId)
+
+    const memoryId = memResult.lastInsertRowid
+
+    // Chunk content and insert into vault_memory_chunks
+    // This triggers FTS5 indexing via trg_fts_insert
+    const chunks = chunkContent(content)
+
+    for (let i = 0; i < chunks.length; i++) {
+      const chunkHash = contentHash(chunks[i])
+      const chunkTokens = estimateTokens(chunks[i])
+      db.prepare(`
+        INSERT INTO vault_memory_chunks
+          (memory_id, chunk_index, chunk_text, chunk_tokens, chunk_hash)
+        VALUES (?, ?, ?, ?, ?)
+      `).run(memoryId, i, chunks[i], chunkTokens, chunkHash)
+    }
+
+    // Also save as observation for timeline tracking
+    db.prepare(`
+      INSERT INTO vault_observations
+        (session_id, source_type, category, raw_content, sanitized_content,
+         content_hash, token_estimate)
+      VALUES (?, 'plugin', ?, ?, ?, ?, ?)
+    `).run(sessionId, category, content, content, hash, estimateTokens(content))
+
+    return {
+      id: String(memoryId),
+      title,
+      content,
+      memoryType: category,
+      createdAt: new Date().toISOString(),
+      sessionId,
+    }
+  })
+}
+
 export function vaultCreateSession(
   sessionId: string,
 ): VaultResponse<{ id: string }> {

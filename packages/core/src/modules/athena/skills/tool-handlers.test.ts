@@ -2,12 +2,12 @@
 // Tests for CRUD operations in skills module handlers
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { handleListSkills, handleViewSkill, handleManageSkill } from '@/modules/skills/tool-handlers'
+import { handleListSkills, handleViewSkill, handleManageSkill } from '@/modules/athena/skills/tool-handlers'
 import type { SkillsConfig } from '@/config/schema'
-import type { SkillsStoragePaths, SkillManifest, SkillDefinition } from '@/modules/skills/types'
+import type { SkillsStoragePaths, SkillManifest, SkillDefinition } from '@/modules/athena/skills/types'
 
 // Mock storage module with all exports
-vi.mock('@/modules/skills/storage', () => ({
+vi.mock('@/modules/athena/skills/storage', () => ({
   loadManifest: vi.fn(),
   saveManifest: vi.fn(),
   createDefaultManifest: vi.fn(),
@@ -33,7 +33,7 @@ import {
   deleteSkillContent,
   updateSkillInManifest,
   removeSkillFromManifest,
-} from '@/modules/skills/storage'
+} from '@/modules/athena/skills/storage'
 
 // Test fixtures
 const mockConfig: SkillsConfig = {

@@ -1,6 +1,8 @@
 // Forge Read Cache — Tracks recently read files and returns
 // compact summaries for re-reads of unchanged content
 
+import { fnv1aHash } from '@/modules/forge/hash'
+
 interface CachedRead {
   path: string
   contentHash: number
@@ -13,15 +15,6 @@ interface CachedRead {
 const readCache = new Map<string, CachedRead>()
 const MAX_CACHE_SIZE = 64
 const CACHE_TTL_MS = 15 * 60 * 1000 // 15 minutes
-
-function quickHash(text: string): number {
-  let hash = 0x811c9dc5
-  for (let i = 0; i < text.length; i++) {
-    hash ^= text.charCodeAt(i)
-    hash = Math.imul(hash, 0x01000193)
-  }
-  return hash >>> 0
-}
 
 function extractQuickExports(content: string): string[] {
   const exports: string[] = []
@@ -66,7 +59,7 @@ export function compressReadResult(
 ): { result: string; wasCached: boolean } {
   evictStale()
 
-  const hash = quickHash(content)
+  const hash = fnv1aHash(content)
   const cached = readCache.get(filePath)
 
   if (cached && cached.contentHash === hash) {

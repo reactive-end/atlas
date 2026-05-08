@@ -7,7 +7,7 @@ import {
   validateOffset,
   validateSkillId,
   validateAction,
-} from '@/modules/skills/tool-handlers'
+} from '@/modules/athena/skills/tool-handlers'
 
 describe('validateLimit', () => {
   it('returns default for invalid input', () => {

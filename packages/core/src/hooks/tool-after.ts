@@ -1,7 +1,7 @@
 import type { ToolAfterContext } from '@/types'
 import type { AtlasConfig } from '@/config/schema'
 import { compressToolResult as compressToolOutput } from '@/modules/forge/bash-wrapper'
-import { vaultSaveObservation } from '@/modules/vault/client'
+import { vaultSaveMemory } from '@/modules/vault/client'
 import { stripPrivateTags } from '@/modules/vault/memory-protocol'
 import { ensureSession } from '@/modules/vault/session-manager'
 
@@ -50,10 +50,11 @@ export function handleToolAfter(
       ? stripPrivateTags(learning)
       : learning
 
-    vaultSaveObservation(
+    vaultSaveMemory(
       sessionId,
       `[Tool: ${ctx.tool}] ${sanitized}`,
       'passive-capture',
+      0.3,
     )
   }
 }
@@ -82,7 +83,7 @@ export function handleRealToolAfter(
       const sanitized = config.vault.stripPrivateTags
         ? stripPrivateTags(learning)
         : learning
-      vaultSaveObservation(sessionId, `[Tool: ${toolName}] ${sanitized}`, 'passive-capture')
+      vaultSaveMemory(sessionId, `[Tool: ${toolName}] ${sanitized}`, 'passive-capture', 0.3)
       vaultSaved = true
     }
   }

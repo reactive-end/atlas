@@ -3,7 +3,7 @@ import { join } from 'node:path'
 import type { CodexConfig } from '@/modules/codex/types'
 
 export function buildCodexPrompt(): string {
-  return `Codex: Repository index active at .atlas/index.md. Before exploring files manually, use codex_search(query) to locate files by exports, path, or description. Only fall back to file_read or directory listing if Codex yields no relevant results.`
+  return `Codex: Repository index active at .atlas/index.md with dependency graph at .atlas/graph.html. Before exploring files manually, use codex_search(query) to locate files by exports, imports, path, type, or description. Only fall back to file_read or directory listing if Codex yields no relevant results.`
 }
 
 export function buildCodexContextPrompt(repoRoot: string, config: CodexConfig): string {
@@ -20,38 +20,62 @@ export function buildCodexContextPrompt(repoRoot: string, config: CodexConfig): 
     const content = readFileSync(indexPath, 'utf-8')
     const lines = content.split('\n')
 
-    // Extract a compact file map from the index
-    const fileEntries: string[] = []
+    // Build a compact directory-grouped file map
+    const filesByDir = new Map<string, string[]>()
     let currentFile = ''
+    let currentType = ''
+    let currentExports = ''
 
     for (const line of lines) {
       if (line.startsWith('# ')) {
         currentFile = line.slice(2).trim()
+      } else if (line.startsWith('type:') && currentFile) {
+        currentType = line.slice(5).trim()
       } else if (line.startsWith('exports:') && currentFile) {
-        const exports = line.slice(8).trim()
-        if (exports) {
-          fileEntries.push(`${currentFile} → ${exports}`)
-        } else {
-          fileEntries.push(currentFile)
-        }
+        currentExports = line.slice(8).trim()
+        const lastSlash = currentFile.lastIndexOf('/')
+        const dir = lastSlash > 0 ? currentFile.substring(0, lastSlash) : '.'
+        const basename = lastSlash > 0 ? currentFile.substring(lastSlash + 1) : currentFile
+
+        const entry = currentExports
+          ? `  ${basename} [${currentType}] → ${currentExports}`
+          : `  ${basename} [${currentType}]`
+
+        const existing = filesByDir.get(dir) ?? []
+        existing.push(entry)
+        filesByDir.set(dir, existing)
+
         currentFile = ''
+        currentType = ''
+        currentExports = ''
       }
     }
 
-    if (fileEntries.length === 0) {
+    if (filesByDir.size === 0) {
       return buildCodexPrompt()
     }
 
-    // Cap the index summary to avoid bloating the system prompt
-    const maxEntries = 50
-    const entries = fileEntries.slice(0, maxEntries)
-    const truncated = fileEntries.length > maxEntries
-      ? `\n... and ${fileEntries.length - maxEntries} more files`
+    // Format as directory-grouped compact map
+    const sections: string[] = []
+    let totalEntries = 0
+    const maxEntries = 80
+
+    for (const [dir, entries] of filesByDir) {
+      if (totalEntries >= maxEntries) break
+      sections.push(`[${dir}/]`)
+      const remaining = maxEntries - totalEntries
+      const batch = entries.slice(0, remaining)
+      sections.push(...batch)
+      totalEntries += batch.length
+    }
+
+    const truncated = totalEntries >= maxEntries
+      ? `\n... (use codex_search for full index)`
       : ''
 
     return [
-      'Codex: Repository map (use codex_search for detailed lookup):',
-      ...entries,
+      'Codex: Repository map (use codex_search for detailed lookup, .atlas/graph.html for visual graph):',
+      ...sections,
       truncated,
       '',
       'Use codex_search(query) before manual file exploration.',

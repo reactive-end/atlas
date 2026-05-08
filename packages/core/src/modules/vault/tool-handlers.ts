@@ -1,4 +1,4 @@
-import { vaultSearch, vaultTimeline, vaultGetObservation, vaultSaveObservation } from '@/modules/vault/client'
+import { vaultSearch, vaultTimeline, vaultGetObservation, vaultSaveMemory } from '@/modules/vault/client'
 import { ensureSession } from '@/modules/vault/session-manager'
 import { stripPrivateTags } from '@/modules/vault/memory-protocol'
 
@@ -84,14 +84,14 @@ export function handleMemSave(
 
   const sanitized = stripPrivate ? stripPrivateTags(content) : content
 
-  const result = vaultSaveObservation(sessionId, sanitized, category)
+  const result = vaultSaveMemory(sessionId, sanitized, category)
 
   if (!result.success) {
     return { content: `mem_save error: ${result.error}`, isError: true }
   }
 
   return {
-    content: `Saved observation ${result.data.id} (${category})`,
+    content: `Saved memory ${result.data.id} [${category}] "${result.data.title}"`,
     isError: false,
   }
 }

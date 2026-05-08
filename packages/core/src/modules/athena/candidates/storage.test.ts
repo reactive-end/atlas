@@ -11,8 +11,8 @@ import {
   removeExpiredCandidates,
   enforceMaxCandidates,
   sortCandidates,
-} from '@/modules/candidates/storage'
-import type { CandidatesManifest, SkillCandidate } from '@/modules/candidates/types'
+} from '@/modules/athena/candidates/storage'
+import type { CandidatesManifest, SkillCandidate } from '@/modules/athena/candidates/types'
 
 const makeCandidate = (overrides: Partial<SkillCandidate> = {}): SkillCandidate => ({
   id: 'test-cand-1',

@@ -2,7 +2,7 @@
 // Handles path resolution and persistence in ~/.athena/
 
 import { existsSync, mkdirSync, readFileSync, writeFileSync, rmSync } from 'node:fs'
-import { join } from 'node:path'
+import { join, dirname } from 'node:path'
 import { homedir } from 'node:os'
 import type { SkillsStoragePaths, SkillManifest, SkillDefinition } from './types'
 import type { SkillsConfig } from '@/config/schema'
@@ -56,7 +56,7 @@ export function saveManifest(
   paths: SkillsStoragePaths,
 ): void {
   const { manifest: manifestPath } = paths
-  const dir = manifestPath.substring(0, manifestPath.lastIndexOf('/'))
+  const dir = dirname(manifestPath)
 
   if (!existsSync(dir)) {
     mkdirSync(dir, { recursive: true })
