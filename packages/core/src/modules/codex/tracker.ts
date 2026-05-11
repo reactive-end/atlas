@@ -125,6 +125,7 @@ export function calculateDeltas(
 
   const existingPaths = new Set(existingIndex ? existingIndex.files.map(f => f.path) : [])
   const lastIndexedTime = existingIndex ? new Date(existingIndex.lastIndexedAt).getTime() : 0
+  const diskFileSet = new Set(diskFiles)
 
   for (const filePath of diskFiles) {
     if (!existingPaths.has(filePath)) {
@@ -145,12 +146,40 @@ export function calculateDeltas(
   }
 
   for (const existingPath of existingPaths) {
-    if (!diskFiles.includes(existingPath)) {
+    if (!diskFileSet.has(existingPath)) {
       delta.deleted.push(existingPath)
     }
   }
 
   return delta
+}
+
+function compileGlobPattern(pattern: string): RegExp {
+  let working = pattern.replace(
+    /\{([^{}]+)\}/g,
+    (_match, group: string) => `{{BRACE:${group}}}`,
+  )
+
+  working = working.replace(/[+.^$[\]\\]/g, '\\$&')
+
+  working = working
+    .replace(/\*\*\//g, '{{GLOBSTAR_SLASH}}')
+    .replace(/\*\*/g, '{{GLOBSTAR}}')
+    .replace(/\*/g, '{{STAR}}')
+    .replace(/\?/g, '{{QMARK}}')
+
+  working = working
+    .replace(/{{GLOBSTAR_SLASH}}/g, '(?:.*/)?')
+    .replace(/{{GLOBSTAR}}/g, '.*')
+    .replace(/{{STAR}}/g, '[^/]*')
+    .replace(/{{QMARK}}/g, '.')
+
+  working = working.replace(
+    /\{\{BRACE:([^}]+)\}\}/g,
+    (_match, group: string) => `(?:${group.split(',').join('|')})`,
+  )
+
+  return new RegExp(`^${working}$`, 'i')
 }
 
 export function scanFiles(
@@ -160,33 +189,12 @@ export function scanFiles(
 ): string[] {
   const results: string[] = []
 
-  const matchesPattern = (path: string, patterns: string[]): boolean => {
-    for (const pattern of patterns) {
-      let working = pattern.replace(
-        /\{([^{}]+)\}/g,
-        (_match, group: string) => `{{BRACE:${group}}}`,
-      )
+  // Pre-compile all glob patterns once
+  const compiledIncludes = includePatterns.map(compileGlobPattern)
+  const compiledExcludes = excludePatterns.map(compileGlobPattern)
 
-      working = working.replace(/[+.^$[\]\\]/g, '\\$&')
-
-      working = working
-        .replace(/\*\*\//g, '{{GLOBSTAR_SLASH}}')
-        .replace(/\*\*/g, '{{GLOBSTAR}}')
-        .replace(/\*/g, '{{STAR}}')
-        .replace(/\?/g, '{{QMARK}}')
-
-      working = working
-        .replace(/{{GLOBSTAR_SLASH}}/g, '(?:.*/)?')
-        .replace(/{{GLOBSTAR}}/g, '.*')
-        .replace(/{{STAR}}/g, '[^/]*')
-        .replace(/{{QMARK}}/g, '.')
-
-      working = working.replace(
-        /\{\{BRACE:([^}]+)\}\}/g,
-        (_match, group: string) => `(?:${group.split(',').join('|')})`,
-      )
-
-      const regex = new RegExp(`^${working}$`, 'i')
+  const matchesCompiled = (path: string, compiled: RegExp[]): boolean => {
+    for (const regex of compiled) {
       if (regex.test(path)) {
         return true
       }
@@ -195,16 +203,11 @@ export function scanFiles(
   }
 
   const shouldExclude = (relativePath: string): boolean => {
-    for (const pattern of excludePatterns) {
-      if (matchesPattern(relativePath, [pattern])) {
-        return true
-      }
-    }
-    return false
+    return matchesCompiled(relativePath, compiledExcludes)
   }
 
   const shouldInclude = (relativePath: string): boolean => {
-    return matchesPattern(relativePath, includePatterns)
+    return matchesCompiled(relativePath, compiledIncludes)
   }
 
   function walkDirectory(dir: string): void {

@@ -137,17 +137,5 @@ export function getAgentConfigs(
   presets: AgentPresetsMap,
   echoMode: boolean,
 ): Record<string, AgentSdkConfig> {
-  const agents = buildAgentRegistry(presets, echoMode)
-
-  const configs: Record<string, AgentSdkConfig> = {}
-  for (const [name, config] of Object.entries(agents)) {
-    configs[name] = { ...config }
-    if (name === 'atlas') {
-      configs[name].mode = 'primary'
-    } else {
-      configs[name].mode = 'subagent'
-    }
-  }
-
-  return configs
+  return buildAgentRegistry(presets, echoMode)
 }

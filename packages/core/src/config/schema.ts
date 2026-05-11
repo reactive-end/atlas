@@ -1,4 +1,4 @@
-import type { EchoLevel, AgentMode, PresetName } from '@/types'
+import type { EchoLevel, AgentMode, PresetName, AgentName } from '@/types'
 import type { CodexConfig } from '@/modules/codex/types'
 
 // SkillsConfig defined locally to avoid circular dependency
@@ -37,7 +37,7 @@ export interface AgentPresetConfig {
   mcps: string[]
 }
 
-export type AgentPresetsMap = Record<string, AgentPresetConfig>
+export type AgentPresetsMap = Partial<Record<AgentName, AgentPresetConfig>>
 
 export interface EchoConfig {
   enabled: boolean
@@ -94,9 +94,9 @@ const MCP_LIST: string[] = ['websearch', 'grep_app']
 
 function buildPreset(
   defaultModel: string,
-  overrides?: Partial<Record<string, string>>,
+  overrides?: Partial<Record<AgentName, string>>,
 ): AgentPresetsMap {
-  const agentNames = [
+  const agentNames: AgentName[] = [
     'atlas', 'pathfinder', 'archivist', 'elder', 'artisan',
     'mender', 'tribunal', 'inspector', 'scribe', 'curator',
     'sentinel', 'herald', 'lorekeeper', 'alchemist', 'magistrate',

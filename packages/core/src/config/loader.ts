@@ -78,8 +78,25 @@ function validateConfig(config: AtlasConfig): void {
     throw new Error('forge.dedupMin must be at least 2')
   }
 
+  if (config.forge.summarizeThresholdLines < 1) {
+    throw new Error('forge.summarizeThresholdLines must be at least 1')
+  }
+
+  if (config.forge.redundancyCacheSize < 1) {
+    throw new Error('forge.redundancyCacheSize must be at least 1')
+  }
+
   if (config.codex.maxFileSize < 1) {
     throw new Error('codex.maxFileSize must be at least 1')
+  }
+
+  if (config.athena.candidates.maxCandidates !== undefined && config.athena.candidates.maxCandidates < 1) {
+    throw new Error('athena.candidates.maxCandidates must be at least 1')
+  }
+
+  if (config.athena.candidates.minConfidence !== undefined &&
+      (config.athena.candidates.minConfidence < 0 || config.athena.candidates.minConfidence > 100)) {
+    throw new Error('athena.candidates.minConfidence must be between 0 and 100')
   }
 }
 

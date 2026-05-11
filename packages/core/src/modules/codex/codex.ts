@@ -33,8 +33,9 @@ export function runCodexIndex(repoRoot: string, config: CodexConfig): IndexStats
 
   const unchangedFiles: IndexedFile[] = []
   if (existingIndex) {
+    const unchangedSet = new Set(delta.unchanged)
     for (const file of existingIndex.files) {
-      if (delta.unchanged.includes(file.path)) {
+      if (unchangedSet.has(file.path)) {
         unchangedFiles.push(file)
       }
     }

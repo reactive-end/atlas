@@ -100,7 +100,7 @@ describe('Agent Definitions', () => {
   describe('atlas specialization', () => {
     it('echo prompt enforces mandatory delegation', () => {
       const agent = createAtlasAgent(TEST_PRESET, true)
-      expect(agent.systemPrompt).toContain('MandatoryDelegation')
+      expect(agent.systemPrompt).toContain('MANDATORY delegation')
     })
 
     it('verbose prompt forbids native OpenCode agents', () => {

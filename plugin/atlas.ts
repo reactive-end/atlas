@@ -49,6 +49,8 @@ import {
   runCuratorReview as runCuratorReviewSkill,
   buildAthenaStats,
   formatAthenaStats,
+  buildFullVaultPrompt,
+  buildMemoryToolsPrompt,
 } from '@atlas-opencode/core'
 
 type AtlasPluginState = {
@@ -156,8 +158,15 @@ const atlasPlugin: Plugin = async (input: PluginInput, _options?: PluginOptions)
         }
 
         if (config.vault.enabled && config.vault.injectMemoryProtocol) {
-          const { buildFullVaultPrompt } = await import('@atlas-opencode/core')
-          output.system.push(buildFullVaultPrompt())
+          // Selective Vault injection: full protocol for memory-heavy agents,
+          // lightweight tools-only prompt for exploration/quick agents
+          const agentName = (input as Record<string, unknown>).agent as string | undefined
+          const fullVaultAgents = new Set(['atlas', 'elder', 'mender', 'inspector', 'scribe', 'curator', 'lorekeeper'])
+          if (!agentName || fullVaultAgents.has(agentName)) {
+            output.system.push(buildFullVaultPrompt())
+          } else {
+            output.system.push(buildMemoryToolsPrompt())
+          }
         }
       } catch {
         // graceful
@@ -410,6 +419,12 @@ const atlasPlugin: Plugin = async (input: PluginInput, _options?: PluginOptions)
           const sessionID = ev.properties?.info?.id
           if (sessionID) {
             sessionStates.delete(sessionID)
+            // Clean Forge caches when no sessions remain to prevent memory leaks
+            if (sessionStates.size === 0) {
+              resetRedundancyCache()
+              clearDiffCache()
+              clearReadCache()
+            }
           }
           return
         }

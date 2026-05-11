@@ -30,7 +30,7 @@ export interface TimelineEntry {
 }
 
 function contentHash(text: string): string {
-  return createHash('sha256').update(text).digest('hex').slice(0, 16)
+  return createHash('sha256').update(text).digest('hex').slice(0, 32)
 }
 
 function estimateTokens(text: string): number {
@@ -47,12 +47,26 @@ function wrapResult<T>(fn: () => T): VaultResponse<T> {
   }
 }
 
+function sanitizeFtsQuery(query: string): string {
+  // Escape FTS5 special operators to prevent query injection / DoS
+  return query
+    .replace(/["*(){}\[\]^~]/g, ' ')
+    .replace(/\b(AND|OR|NOT|NEAR)\b/gi, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
 export function vaultSearch(
   query: string,
   limit = 10,
 ): VaultResponse<SearchResult[]> {
   return wrapResult(() => {
     const db = openDatabase()
+    const sanitized = sanitizeFtsQuery(query)
+
+    if (sanitized.length === 0) {
+      return []
+    }
 
     interface FtsRow {
       id: number
@@ -70,7 +84,7 @@ export function vaultSearch(
         AND m.is_archived = 0
       ORDER BY f.rank
       LIMIT ?
-    `).all(query, limit)
+    `).all(sanitized, limit)
 
     return rows.map(r => ({
       id: String(r.id),
@@ -248,44 +262,53 @@ export function vaultSaveMemory(
     const title = deriveTitle(content, category)
     const normalized = hash
 
-    const memResult = db.prepare(`
-      INSERT INTO vault_memories
-        (memory_type, title, content, summary, normalized_content, importance_score,
-         confidence_score, source_session_id, created_at, updated_at, last_accessed_at)
-      VALUES (?, ?, ?, ?, ?, ?, 1.0, ?, datetime('now'), datetime('now'), datetime('now'))
-    `).run(category, title, content, title, normalized, importanceScore, sessionId)
+    // Wrap all inserts in a transaction for atomicity
+    db.exec('BEGIN')
+    try {
+      const memResult = db.prepare(`
+        INSERT INTO vault_memories
+          (memory_type, title, content, summary, normalized_content, importance_score,
+           confidence_score, source_session_id, created_at, updated_at, last_accessed_at)
+        VALUES (?, ?, ?, ?, ?, ?, 1.0, ?, datetime('now'), datetime('now'), datetime('now'))
+      `).run(category, title, content, title, normalized, importanceScore, sessionId)
 
-    const memoryId = memResult.lastInsertRowid
+      const memoryId = memResult.lastInsertRowid
 
-    // Chunk content and insert into vault_memory_chunks
-    // This triggers FTS5 indexing via trg_fts_insert
-    const chunks = chunkContent(content)
+      // Chunk content and insert into vault_memory_chunks
+      // This triggers FTS5 indexing via trg_fts_insert
+      const chunks = chunkContent(content)
 
-    for (let i = 0; i < chunks.length; i++) {
-      const chunkHash = contentHash(chunks[i])
-      const chunkTokens = estimateTokens(chunks[i])
+      for (let i = 0; i < chunks.length; i++) {
+        const chunkHash = contentHash(chunks[i])
+        const chunkTokens = estimateTokens(chunks[i])
+        db.prepare(`
+          INSERT INTO vault_memory_chunks
+            (memory_id, chunk_index, chunk_text, chunk_tokens, chunk_hash)
+          VALUES (?, ?, ?, ?, ?)
+        `).run(memoryId, i, chunks[i], chunkTokens, chunkHash)
+      }
+
+      // Also save as observation for timeline tracking
       db.prepare(`
-        INSERT INTO vault_memory_chunks
-          (memory_id, chunk_index, chunk_text, chunk_tokens, chunk_hash)
-        VALUES (?, ?, ?, ?, ?)
-      `).run(memoryId, i, chunks[i], chunkTokens, chunkHash)
-    }
+        INSERT INTO vault_observations
+          (session_id, source_type, category, raw_content, sanitized_content,
+           content_hash, token_estimate)
+        VALUES (?, 'plugin', ?, ?, ?, ?, ?)
+      `).run(sessionId, category, content, content, hash, estimateTokens(content))
 
-    // Also save as observation for timeline tracking
-    db.prepare(`
-      INSERT INTO vault_observations
-        (session_id, source_type, category, raw_content, sanitized_content,
-         content_hash, token_estimate)
-      VALUES (?, 'plugin', ?, ?, ?, ?, ?)
-    `).run(sessionId, category, content, content, hash, estimateTokens(content))
+      db.exec('COMMIT')
 
-    return {
-      id: String(memoryId),
-      title,
-      content,
-      memoryType: category,
-      createdAt: new Date().toISOString(),
-      sessionId,
+      return {
+        id: String(memoryId),
+        title,
+        content,
+        memoryType: category,
+        createdAt: new Date().toISOString(),
+        sessionId,
+      }
+    } catch (txErr) {
+      db.exec('ROLLBACK')
+      throw txErr
     }
   })
 }

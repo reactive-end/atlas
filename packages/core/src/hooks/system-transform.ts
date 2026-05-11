@@ -2,9 +2,9 @@ import type { SystemTransformContext, PluginState, AgentName, EchoLevel } from '
 import type { AtlasConfig, AgentPresetsMap } from '@/config/schema'
 import { buildEchoPrompt, buildDisabledPrompt } from '@/modules/echo/prompt-builder'
 import { shouldDisableEcho } from '@/modules/echo/auto-clarity'
-import { buildFullVaultPrompt } from '@/modules/vault/memory-protocol'
+import { buildFullVaultPrompt, buildMemoryToolsPrompt } from '@/modules/vault/memory-protocol'
 import { AGENT_FACTORIES, ALL_AGENT_NAMES } from '@/modules/agents/registry'
-import { buildCodexPrompt, buildCodexContextPrompt } from '@/modules/codex/prompt'
+import { buildCodexPrompt } from '@/modules/codex/prompt'
 
 function getActivePresets(config: AtlasConfig): AgentPresetsMap {
   return config.agents.presets[config.agents.preset]
@@ -58,12 +58,23 @@ function getAdaptiveLevel(
   return baseLevel
 }
 
-function buildVaultSection(config: AtlasConfig): string {
+// Agents that benefit from full Vault memory protocol
+const VAULT_FULL_AGENTS: ReadonlySet<string> = new Set([
+  'atlas', 'elder', 'mender', 'inspector', 'scribe', 'curator', 'lorekeeper',
+])
+
+function buildVaultSection(config: AtlasConfig, agentName?: string): string {
   if (!config.vault.enabled || !config.vault.injectMemoryProtocol) {
     return ''
   }
 
-  return buildFullVaultPrompt()
+  // Full protocol for agents that actively use memory
+  if (!agentName || VAULT_FULL_AGENTS.has(agentName)) {
+    return buildFullVaultPrompt()
+  }
+
+  // Lightweight tools-only prompt for other agents
+  return buildMemoryToolsPrompt()
 }
 
 function buildForgeSection(config: AtlasConfig): string {
@@ -71,16 +82,7 @@ function buildForgeSection(config: AtlasConfig): string {
     return ''
   }
 
-  const bypassList = config.forge.bypass.join(', ')
-
-  return `Forge: Bash output compression is active. Outputs from bash/shell/terminal/exec/command tools are automatically compressed to save tokens.
-- Strips ANSI codes, progress bars, timestamps, spinners
-- Deduplicates repeated lines
-- Groups file paths by directory
-- Truncates to max ${config.forge.maxLines} lines
-- Summarizes outputs over ${config.forge.summarizeThresholdLines} lines
-- Bypassed commands: ${bypassList}
-- Tools: forge_stats (view compression stats), forge_reset_cache (clear redundancy cache)`
+  return `Forge: Bash output auto-compressed (max ${config.forge.maxLines} lines). Tools: forge_stats, forge_reset_cache.`
 }
 
 function buildCodexSection(config: AtlasConfig): string {
@@ -88,12 +90,7 @@ function buildCodexSection(config: AtlasConfig): string {
     return ''
   }
 
-  try {
-    const repoRoot = process.cwd()
-    return buildCodexContextPrompt(repoRoot, config.codex)
-  } catch {
-    return buildCodexPrompt()
-  }
+  return buildCodexPrompt()
 }
 
 export function handleSystemTransform(
@@ -119,7 +116,7 @@ export function handleSystemTransform(
     }
   }
 
-  const vaultSection = buildVaultSection(config)
+  const vaultSection = buildVaultSection(config, isRegisteredAgent(ctx.agent) ? ctx.agent : undefined)
   if (vaultSection) {
     sections.push(vaultSection)
   }

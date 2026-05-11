@@ -21,8 +21,7 @@ function getRedundancyCache(config: ForgeConfig): RedundancyCache {
   return redundancyCache
 }
 
-function groupFilesByDirectory(text: string): string {
-  const lines = text.split('\n')
+function groupFilesByDirectory(lines: string[]): string[] {
   const fileLineRegex = /^(\s*)([./][\w/.-]+)/
   const groups = new Map<string, string[]>()
   const nonFileLines: string[] = []
@@ -42,7 +41,7 @@ function groupFilesByDirectory(text: string): string {
   }
 
   if (groups.size === 0) {
-    return text
+    return lines
   }
 
   const grouped: string[] = [...nonFileLines]
@@ -53,14 +52,12 @@ function groupFilesByDirectory(text: string): string {
     }
   }
 
-  return grouped.join('\n')
+  return grouped
 }
 
-function truncateOutput(text: string, maxLines: number): string {
-  const lines = text.split('\n')
-
+function truncateLines(lines: string[], maxLines: number): string[] {
   if (lines.length <= maxLines) {
-    return text
+    return lines
   }
 
   const headCount = Math.ceil(maxLines * 0.6)
@@ -69,14 +66,12 @@ function truncateOutput(text: string, maxLines: number): string {
   const tail = lines.slice(-tailCount)
   const skipped = lines.length - headCount - tailCount
 
-  return [...head, `\n... [${skipped} lines omitted] ...\n`, ...tail].join('\n')
+  return [...head, `\n... [${skipped} lines omitted] ...\n`, ...tail]
 }
 
-function summarizeLargeOutput(text: string, threshold: number): string {
-  const lines = text.split('\n')
-
+function summarizeLines(lines: string[], threshold: number): string[] {
   if (lines.length <= threshold) {
-    return text
+    return lines
   }
 
   const errorLines = lines.filter(l =>
@@ -116,35 +111,43 @@ function summarizeLargeOutput(text: string, threshold: number): string {
   summary.push('First 5 lines:', ...firstLines)
   summary.push('Last 5 lines:', ...lastLines)
 
-  return summary.join('\n')
+  return summary
 }
 
 export function compressBashOutput(
   text: string,
   config: ForgeConfig,
 ): CompressionResult {
-  const originalLines = text.split('\n').length
-  let output = text
+  // Split once at the start — all pipeline stages operate on string[]
+  const originalLines = text.split('\n')
+  const originalCount = originalLines.length
 
-  output = smartFilter(output)
+  // smartFilter + compressMarkdown operate on full text (regex-based)
+  let filtered = smartFilter(text)
 
-  const dedupResult = deduplicateLines(output, config.dedupMin)
-  output = dedupResult.text
+  const dedupResult = deduplicateLines(filtered, config.dedupMin)
+  filtered = dedupResult.text
 
   if (config.compressMarkdown) {
-    output = compressMarkdown(output)
+    filtered = compressMarkdown(filtered)
   }
 
   // Compress repetitive errors (TS/ESLint) before truncation
-  output = compressErrors(output)
+  filtered = compressErrors(filtered)
 
-  output = groupFilesByDirectory(output)
+  // Convert to lines for directory grouping + truncation
+  let lines = filtered.split('\n')
 
-  if (output.split('\n').length > config.summarizeThresholdLines) {
-    output = summarizeLargeOutput(output, config.summarizeThresholdLines)
+  lines = groupFilesByDirectory(lines)
+
+  if (lines.length > config.summarizeThresholdLines) {
+    lines = summarizeLines(lines, config.summarizeThresholdLines)
   } else {
-    output = truncateOutput(output, config.maxLines)
+    lines = truncateLines(lines, config.maxLines)
   }
+
+  // Join once at the end
+  let output = lines.join('\n')
 
   if (config.redundancyCacheEnabled) {
     const cache = getRedundancyCache(config)
@@ -155,13 +158,13 @@ export function compressBashOutput(
     }
   }
 
-  const compressedLines = output.split('\n').length
-  const ratio = originalLines > 0 ? 1 - (compressedLines / originalLines) : 0
+  const compressedCount = output.split('\n').length
+  const ratio = originalCount > 0 ? 1 - (compressedCount / originalCount) : 0
 
   return {
     output,
-    originalLines,
-    compressedLines,
+    originalLines: originalCount,
+    compressedLines: compressedCount,
     ratio: Math.max(0, ratio),
   }
 }

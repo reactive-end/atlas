@@ -34,19 +34,30 @@ function jaccardSimilarity(setA: Set<number>, setB: Set<number>): number {
   return union === 0 ? 0 : intersection / union
 }
 
+const DEFAULT_TTL_MS = 10 * 60 * 1000 // 10 minutes
+
 export class RedundancyCache {
   private cache: CacheEntry[] = []
   private readonly maxSize: number
   private readonly similarityThreshold: number
   private readonly shingleSize: number
+  private readonly ttlMs: number
 
-  constructor(maxSize: number, similarityThreshold = 0.85, shingleSize = 3) {
+  constructor(maxSize: number, similarityThreshold = 0.85, shingleSize = 3, ttlMs = DEFAULT_TTL_MS) {
     this.maxSize = maxSize
     this.similarityThreshold = similarityThreshold
     this.shingleSize = shingleSize
+    this.ttlMs = ttlMs
+  }
+
+  private evictStale(): void {
+    const now = Date.now()
+    this.cache = this.cache.filter(entry => now - entry.timestamp <= this.ttlMs)
   }
 
   isDuplicate(text: string): boolean {
+    this.evictStale()
+
     const hash = fnv1aHash(text)
 
     for (const entry of this.cache) {
@@ -68,6 +79,8 @@ export class RedundancyCache {
   }
 
   add(text: string): void {
+    this.evictStale()
+
     const hash = fnv1aHash(text)
     const shingles = generateShingles(text, this.shingleSize)
 

@@ -48,5 +48,9 @@ export function buildFullVaultPrompt(): string {
 }
 
 export function stripPrivateTags(content: string): string {
-  return content.replace(/<private>[\s\S]*?<\/private>/g, '[REDACTED]')
+  // Handle matched pairs (case-insensitive)
+  let result = content.replace(/<private>[\s\S]*?<\/private>/gi, '[REDACTED]')
+  // Handle unclosed <private> tags — redact everything after the tag
+  result = result.replace(/<private>[\s\S]*/gi, '[REDACTED]')
+  return result
 }

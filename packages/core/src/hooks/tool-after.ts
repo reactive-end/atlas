@@ -7,13 +7,30 @@ import { ensureSession } from '@/modules/vault/session-manager'
 
 function extractLearnings(result: string): string | null {
   const errorPattern = /error|exception|failed|bug|fix/i
-  const solutionPattern = /solved|fixed|resolved|workaround/i
+  const solutionPattern = /solved|fixed|resolved|workaround|solution|corrected/i
+  const insightPattern = /found|discovered|learned|noticed|important|cause|root cause/i
 
-  if (errorPattern.test(result) && solutionPattern.test(result)) {
-    const lines = result.split('\n').filter(line =>
-      errorPattern.test(line) || solutionPattern.test(line),
-    )
-    return lines.slice(0, 10).join('\n')
+  const lines = result.split('\n')
+  let score = 0
+
+  const relevantLines: string[] = []
+
+  for (const line of lines) {
+    if (errorPattern.test(line)) {
+      score += 2
+      relevantLines.push(line)
+    } else if (solutionPattern.test(line)) {
+      score += 3
+      relevantLines.push(line)
+    } else if (insightPattern.test(line)) {
+      score += 1
+      relevantLines.push(line)
+    }
+  }
+
+  // Require minimum signal to avoid noise
+  if (score >= 3 && relevantLines.length > 0) {
+    return relevantLines.slice(0, 10).join('\n')
   }
 
   return null

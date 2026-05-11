@@ -15,6 +15,14 @@ const SECURITY_KEYWORDS = [
   'password',
   'secret',
   'token leak',
+  'api_key',
+  'api key',
+  'aws_secret',
+  'private_key',
+  'access_token',
+  'client_secret',
+  'bearer token',
+  'credentials',
 ]
 
 const IRREVERSIBLE_KEYWORDS = [
